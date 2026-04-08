@@ -476,7 +476,7 @@ function playCurrentSection() {
   state.currentChunks = chunkText(fullText);
   state.currentChunkIdx = 0;
   state.isPlaying = true;
-  updateNowPlayingUI();
+  updatePlayerUI();
   speakNextChunk();
   refreshActivePopupButton();
 }

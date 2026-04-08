@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Nearby Audio — Tests</title>
+<style>
+  body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+  .pass { color: #4ade80; }
+  .fail { color: #ef4444; }
+  .section { color: #888; margin-top: 16px; font-weight: bold; }
+  #results div { padding: 2px 0; }
+  #summary { margin-top: 20px; font-size: 16px; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>Nearby Audio Tests</h2>
+<div id="results"></div>
+<div id="summary"></div>
+<iframe id="appFrame" src="index.html" style="width:400px;height:300px;position:absolute;left:-9999px;"></iframe>
+
+<script>
+const results = document.getElementById('results');
+const summaryEl = document.getElementById('summary');
+let passed = 0, failed = 0;
+
+function section(name) {
+  const d = document.createElement('div');
+  d.className = 'section';
+  d.textContent = '— ' + name + ' —';
+  results.appendChild(d);
+}
+
+function assert(name, condition) {
+  const d = document.createElement('div');
+  if (condition) { d.className = 'pass'; d.textContent = '✓ ' + name; passed++; }
+  else { d.className = 'fail'; d.textContent = '✗ ' + name; failed++; }
+  results.appendChild(d);
+}
+
+function assertEq(name, actual, expected) {
+  const pass = JSON.stringify(actual) === JSON.stringify(expected);
+  const d = document.createElement('div');
+  if (pass) { d.className = 'pass'; d.textContent = '✓ ' + name; passed++; }
+  else { d.className = 'fail'; d.textContent = '✗ ' + name + ' — got ' + JSON.stringify(actual) + ', expected ' + JSON.stringify(expected); failed++; }
+  results.appendChild(d);
+}
+
+function showSummary() {
+  summaryEl.textContent = `${passed + failed} tests: ${passed} passed, ${failed} failed`;
+  summaryEl.className = failed > 0 ? 'fail' : 'pass';
+}
+
+const appFrame = document.getElementById('appFrame');
+function appEval(expr) { return appFrame.contentWindow.eval(expr); }
+
+appFrame.addEventListener('load', async () => {
+  const app = appFrame.contentWindow;
+
+  // Wait a moment for app initialization
+  await new Promise(r => setTimeout(r, 1000));
+
+  // ===== Function existence =====
+  section('Core functions exist');
+  assert('initMap', typeof app.initMap === 'function');
+  assert('setUserLocation', typeof app.setUserLocation === 'function');
+  assert('fetchNearby', typeof app.fetchNearby === 'function');
+  assert('fetchFullArticle', typeof app.fetchFullArticle === 'function');
+  assert('chunkText', typeof app.chunkText === 'function');
+  assert('startArticle', typeof app.startArticle === 'function');
+  assert('playCurrentSection', typeof app.playCurrentSection === 'function');
+  assert('speakNextChunk', typeof app.speakNextChunk === 'function');
+  assert('stopPlayback', typeof app.stopPlayback === 'function');
+  assert('togglePause', typeof app.togglePause === 'function');
+  assert('escHtml', typeof app.escHtml === 'function');
+  assert('formatDistance', typeof app.formatDistance === 'function');
+  assert('openArticlePopup', typeof app.openArticlePopup === 'function');
+
+  section('Player functions exist');
+  assert('updatePlayerUI', typeof app.updatePlayerUI === 'function');
+  assert('showPlayer', typeof app.showPlayer === 'function');
+  assert('hidePlayer', typeof app.hidePlayer === 'function');
+  assert('renderSectionsList', typeof app.renderSectionsList === 'function');
+  assert('cycleSpeed', typeof app.cycleSpeed === 'function');
+  assert('skipSection', typeof app.skipSection === 'function');
+  assert('jumpToSection', typeof app.jumpToSection === 'function');
+  assert('togglePlayerExpanded', typeof app.togglePlayerExpanded === 'function');
+
+  // ===== No stale references in source =====
+  section('No stale function references in source');
+  const resp = await fetch('index.html');
+  const src = await resp.text();
+  assert('No calls to updateNowPlayingUI()', !src.match(/updateNowPlayingUI\s*\(/));
+  assert('No calls to hideNowPlaying()', !src.match(/hideNowPlaying\s*\(/));
+  assert('No calls to showNowPlaying()', !src.match(/showNowPlaying\s*\(/));
+  assert('No getElementById nowPlaying', !src.match(/getElementById\(['"]nowPlaying['"]\)/));
+  assert('No getElementById npTitle', !src.match(/getElementById\(['"]npTitle['"]\)/));
+  assert('No getElementById skipBtn', !src.match(/getElementById\(['"]skipBtn['"]\)/));
+
+  // ===== DOM elements exist =====
+  section('Player DOM elements');
+  const doc = app.document;
+  assert('#player exists', !!doc.getElementById('player'));
+  assert('#playerTitle exists', !!doc.getElementById('playerTitle'));
+  assert('#playerSectionLabel exists', !!doc.getElementById('playerSectionLabel'));
+  assert('#playPauseBtn exists', !!doc.getElementById('playPauseBtn'));
+  assert('#playerProgressFill exists', !!doc.getElementById('playerProgressFill'));
+  assert('#speedBtn exists', !!doc.getElementById('speedBtn'));
+  assert('#sectionsList exists', !!doc.getElementById('sectionsList'));
+  assert('#playerHandle exists', !!doc.getElementById('playerHandle'));
+  assert('#playerClose exists', !!doc.getElementById('playerClose'));
+
+  section('Map DOM elements');
+  assert('#map exists', !!doc.getElementById('map'));
+  assert('#locationPreset exists', !!doc.getElementById('locationPreset'));
+  assert('#zoomInBtn exists', !!doc.getElementById('zoomInBtn'));
+  assert('#zoomOutBtn exists', !!doc.getElementById('zoomOutBtn'));
+
+  // ===== chunkText =====
+  section('chunkText');
+  assertEq('single short sentence', app.chunkText('Hello world.'), ['Hello world.']);
+  assertEq('empty string returns empty array', app.chunkText(''), []);
+  const longText = 'This is a test sentence. '.repeat(20);
+  const chunks = app.chunkText(longText);
+  assert('long text produces multiple chunks', chunks.length > 1);
+  assert('no chunk exceeds 400 chars', chunks.every(c => c.length < 400));
+
+  // ===== escHtml =====
+  section('escHtml');
+  assertEq('escapes ampersand', app.escHtml('A & B'), 'A &amp; B');
+  assertEq('escapes angle brackets', app.escHtml('<script>'), '&lt;script&gt;');
+  assertEq('escapes quotes', app.escHtml('"hello"'), '&quot;hello&quot;');
+  assertEq('plain text unchanged', app.escHtml('Hello world'), 'Hello world');
+
+  // ===== formatDistance =====
+  section('formatDistance');
+  assertEq('meters', app.formatDistance(150), '150 m away');
+  assertEq('meters boundary', app.formatDistance(999), '999 m away');
+  assertEq('kilometers', app.formatDistance(2500), '2.5 km away');
+
+  // ===== Speed settings (block-scoped, use eval) =====
+  section('Speed control');
+  assert('SPEEDS is array', appEval('Array.isArray(SPEEDS)'));
+  assert('SPEEDS includes 1x', appEval('SPEEDS.includes(1)'));
+  assert('Default speed is 1x', appEval('SPEEDS[speedIdx] === 1'));
+
+  // ===== State management (block-scoped, use eval) =====
+  section('State');
+  assert('state object exists', appEval('typeof state === "object"'));
+  assert('state.map initialized', appEval('state.map !== null'));
+  assert('state.isPlaying is false', appEval('state.isPlaying === false'));
+
+  // ===== stopPlayback resets state =====
+  section('stopPlayback resets state');
+  appEval('state.isPlaying = true');
+  appEval('state.currentArticle = { title: "Test", sections: [] }');
+  appEval('state.currentSectionIdx = 3');
+  appEval('state.currentChunks = ["a", "b"]');
+  appEval('state.currentChunkIdx = 1');
+  appEval('stopPlayback()');
+  assert('isPlaying → false', appEval('state.isPlaying') === false);
+  assert('currentArticle → null', appEval('state.currentArticle') === null);
+  assert('currentSectionIdx → 0', appEval('state.currentSectionIdx') === 0);
+  assert('currentChunks → []', appEval('state.currentChunks.length') === 0);
+  assert('currentChunkIdx → 0', appEval('state.currentChunkIdx') === 0);
+
+  // ===== Wikipedia API (live) =====
+  section('Wikipedia API (live)');
+  try {
+    const articles = await app.fetchNearby(40.7308, -73.9544);
+    assert('fetchNearby returns array', Array.isArray(articles));
+    assert('fetchNearby finds articles for Greenpoint', articles.length > 0);
+    if (articles.length > 0) {
+      assert('article has title', typeof articles[0].title === 'string' && articles[0].title.length > 0);
+      assert('article has lat', typeof articles[0].lat === 'number');
+      assert('article has extract', typeof articles[0].extract === 'string' && articles[0].extract.length > 0);
+      assert('no articles with empty extract', articles.every(a => a.extract.length > 0));
+    }
+
+    const sections = await app.fetchFullArticle('Greenpoint,_Brooklyn');
+    assert('fetchFullArticle returns array', Array.isArray(sections));
+    assert('fetchFullArticle has sections', sections.length > 0);
+    if (sections.length > 0) {
+      assert('first section is Introduction', sections[0].heading === 'Introduction');
+      assert('sections have text content', sections[0].text.length > 50);
+      assert('no References section', !sections.some(s => /^references?$/i.test(s.heading)));
+      assert('no See also section', !sections.some(s => /^see also$/i.test(s.heading)));
+      assert('no External links section', !sections.some(s => /^external links?$/i.test(s.heading)));
+    }
+  } catch(e) {
+    assert('Wikipedia API reachable: ' + e.message, false);
+  }
+
+  showSummary();
+});
+</script>
+</body>
+</html>
