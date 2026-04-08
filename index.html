@@ -378,7 +378,7 @@ async function fetchFullArticle(title) {
   if (!res.ok) throw new Error('Article fetch HTTP ' + res.status);
   const html = await res.text();
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  doc.querySelectorAll('sup, table, style, script, .reference, .mw-editsection, .mw-empty-elt, figure, .infobox, .navbox, .sidebar, .metadata').forEach(el => el.remove());
+  doc.querySelectorAll('sup, table, style, script, .reference, .mw-editsection, .mw-empty-elt, figure, .infobox, .navbox, .sidebar, .metadata, .shortdescription, .mw-disambiguation, [style*="display:none"], .hatnote, .geo, .coordinates').forEach(el => el.remove());
   const sections = [];
   const sectionEls = doc.querySelectorAll('section');
   const SKIP = /^(references?|external links?|see also|notes?|further reading|bibliography|citations?|footnotes?|sources?)$/i;
