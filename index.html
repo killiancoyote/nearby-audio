@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Nearby Audio</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    background: #0a0a0a; color: #f5f5f5;
+  }
+  #map { position: absolute; inset: 0; background: #0a0a0a; }
+  .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
+  .leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 10px !important; }
+  .leaflet-control-attribution a { color: #aaa !important; }
+
+  .topbar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 1000;
+    padding: 14px 16px 12px;
+    background: linear-gradient(to bottom, rgba(10,10,10,0.95), rgba(10,10,10,0.7) 80%, rgba(10,10,10,0));
+    pointer-events: none;
+  }
+  .topbar h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.5px; pointer-events: auto; }
+  .topbar .sub { font-size: 12px; color: #aaa; margin-top: 2px; pointer-events: auto; }
+
+  .floating-controls {
+    position: absolute; top: 72px; right: 12px; z-index: 1000;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .fc-btn {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: rgba(26,26,26,0.95); border: 1px solid #333;
+    color: #f5f5f5; font-size: 20px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .fc-btn:active { background: #2a2a2a; }
+
+  .preset-picker {
+    position: absolute; top: 72px; left: 12px; z-index: 1000;
+    background: rgba(26,26,26,0.95); border: 1px solid #333;
+    border-radius: 12px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .preset-picker select {
+    background: transparent; color: #f5f5f5; border: none;
+    padding: 12px 32px 12px 14px; font-size: 13px; font-weight: 500;
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5f5f5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+  }
+
+  .toast {
+    position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
+    z-index: 1001; background: rgba(26,26,26,0.95); border: 1px solid #333;
+    border-radius: 12px; padding: 10px 16px; font-size: 13px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    display: none; max-width: 80%; text-align: center; white-space: nowrap;
+  }
+  .toast.visible { display: block; }
+  .toast.error { color: #ff6b6b; border-color: #5a2020; }
+  .toast.ok { color: #4ade80; border-color: #205a30; }
+
+  .leaflet-popup-content-wrapper {
+    background: #1a1a1a !important; color: #f5f5f5 !important;
+    border-radius: 14px !important; border: 1px solid #333 !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    padding: 0 !important;
+  }
+  .leaflet-popup-content { margin: 0 !important; width: 240px !important; }
+  .leaflet-popup-tip { background: #1a1a1a !important; border: 1px solid #333 !important; }
+  .leaflet-popup-close-button { color: #888 !important; font-size: 20px !important; padding: 6px 8px 0 0 !important; }
+
+  .popup { display: flex; flex-direction: column; }
+  .popup-thumb { width: 100%; height: 120px; background: #0a0a0a; border-radius: 14px 14px 0 0; overflow: hidden; }
+  .popup-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .popup-body { padding: 12px 14px 14px; }
+  .popup-title { font-size: 15px; font-weight: 700; margin: 0 0 4px; color: #f5f5f5; line-height: 1.25; }
+  .popup-meta { font-size: 11px; color: #888; margin: 0 0 10px; }
+  .popup-extract {
+    font-size: 12px; line-height: 1.45; color: #bbb; margin: 0 0 12px;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .popup-play {
+    width: 100%; padding: 10px; background: #2563eb; color: white;
+    border: none; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .popup-play:active { background: #1d4ed8; }
+  .popup-play.playing { background: #ef4444; }
+
+  .user-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #2563eb; border: 3px solid white;
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.3), 0 2px 6px rgba(0,0,0,0.4);
+  }
+
+  .now-playing {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
+    background: rgba(20,20,20,0.98); border-top: 1px solid #333;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    display: none; align-items: center; gap: 12px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  }
+  .now-playing.active { display: flex; }
+  .np-text { flex: 1; min-width: 0; }
+  .np-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+  .np-title { font-size: 15px; font-weight: 600; color: #f5f5f5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .np-section { font-size: 12px; color: #888; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .np-btn {
+    width: 44px; height: 44px; border-radius: 22px;
+    background: #2a2a2a; border: 1px solid #444; color: #f5f5f5;
+    font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .np-btn:active { background: #3a3a3a; }
+  .np-btn.pause { background: #2563eb; border-color: #2563eb; }
+</style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <div class="topbar">
+    <h1>Nearby Audio</h1>
+    <div class="sub" id="sub">Tap a pin to play an article</div>
+  </div>
+
+  <div class="preset-picker">
+    <select id="locationPreset">
+      <option value="auto">My location</option>
+      <option value="40.7308,-73.9544" selected>Greenpoint</option>
+      <option value="40.7223,-73.9874">Williamsburg</option>
+      <option value="40.7794,-73.9632">Met Museum</option>
+      <option value="40.7484,-73.9857">Empire State</option>
+      <option value="48.8584,2.2945">Eiffel Tower</option>
+      <option value="51.5007,-0.1246">Westminster</option>
+      <option value="35.6595,139.7004">Shibuya</option>
+    </select>
+  </div>
+
+  <div class="floating-controls">
+    <button class="fc-btn" id="recenterBtn" title="Recenter">&#8857;</button>
+    <button class="fc-btn" id="refreshBtn" title="Refresh">&#8635;</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="now-playing" id="nowPlaying">
+    <div class="np-text">
+      <div class="np-label">Now playing</div>
+      <div class="np-title" id="npTitle"></div>
+      <div class="np-section" id="npSection"></div>
+    </div>
+    <button class="np-btn pause" id="playPauseBtn" title="Pause">&#9208;</button>
+    <button class="np-btn" id="skipBtn" title="Next section">&#9197;</button>
+  </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const state = {
+  map: null, userMarker: null, userLatLng: null,
+  articleMarkers: [],
+  currentArticle: null, currentSectionIdx: 0,
+  currentChunks: [], currentChunkIdx: 0,
+  isPlaying: false,
+};
+
+const sub = document.getElementById('sub');
+const toastEl = document.getElementById('toast');
+const nowPlaying = document.getElementById('nowPlaying');
+const npTitle = document.getElementById('npTitle');
+const npSection = document.getElementById('npSection');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const skipBtn = document.getElementById('skipBtn');
+const recenterBtn = document.getElementById('recenterBtn');
+const refreshBtn = document.getElementById('refreshBtn');
+const presetSel = document.getElementById('locationPreset');
+
+let toastTimer = null;
+function toast(msg, type, duration = 3000) {
+  toastEl.textContent = msg;
+  toastEl.className = 'toast visible' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  if (duration > 0) toastTimer = setTimeout(() => toastEl.classList.remove('visible'), duration);
+}
+function hideToast() { toastEl.classList.remove('visible'); }
+
+function initMap(lat, lon) {
+  state.map = L.map('map', { zoomControl: false }).setView([lat, lon], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap',
+  }).addTo(state.map);
+  setUserLocation(lat, lon);
+}
+
+function setUserLocation(lat, lon) {
+  state.userLatLng = [lat, lon];
+  const icon = L.divIcon({
+    className: '', html: '<div class="user-dot"></div>',
+    iconSize: [18, 18], iconAnchor: [9, 9],
+  });
+  if (state.userMarker) state.userMarker.setLatLng([lat, lon]);
+  else state.userMarker = L.marker([lat, lon], { icon, zIndexOffset: 1000 }).addTo(state.map);
+}
+
+async function fetchNearby(lat, lon) {
+  const geoUrl = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*&list=geosearch&gscoord=${lat}%7C${lon}&gsradius=1000&gslimit=30`;
+  const res = await fetch(geoUrl);
+  if (!res.ok) throw new Error('Geosearch HTTP ' + res.status);
+  const data = await res.json();
+  const pages = (data.query && data.query.geosearch) || [];
+  const summaries = await Promise.all(pages.map(async p => {
+    try {
+      const r = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(p.title)}`);
+      if (!r.ok) return null;
+      const s = await r.json();
+      return {
+        title: p.title, lat: p.lat, lon: p.lon, distance: p.dist,
+        extract: s.extract || '',
+        thumb: s.thumbnail ? s.thumbnail.source : null,
+      };
+    } catch { return null; }
+  }));
+  return summaries.filter(Boolean);
+}
+
+async function fetchFullArticle(title) {
+  const url = `https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(title)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Article fetch HTTP ' + res.status);
+  const data = await res.json();
+  const sections = [];
+  if (data.lead && data.lead.sections && data.lead.sections[0]) {
+    const leadText = stripHtml(data.lead.sections[0].text || '');
+    if (leadText.trim()) sections.push({ heading: 'Introduction', text: leadText });
+  }
+  if (data.remaining && data.remaining.sections) {
+    let current = null;
+    for (const sec of data.remaining.sections) {
+      const heading = (sec.line || '').replace(/<[^>]+>/g, '').trim();
+      const text = stripHtml(sec.text || '');
+      if (sec.toclevel === 1) {
+        if (current) sections.push(current);
+        current = { heading: heading || 'Section', text };
+      } else if (current) {
+        if (heading) current.text += '. ' + heading + '. ';
+        current.text += text;
+      }
+    }
+    if (current) sections.push(current);
+  }
+  const SKIP = /^(references?|external links?|see also|notes?|further reading|bibliography|citations?|footnotes?|sources?)$/i;
+  return sections.filter(s => !SKIP.test(s.heading) && s.text.trim().length > 0);
+}
+
+function stripHtml(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  div.querySelectorAll('sup, table, style, script, .reference, .mw-editsection').forEach(el => el.remove());
+  return (div.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function clearArticleMarkers() {
+  state.articleMarkers.forEach(m => state.map.removeLayer(m));
+  state.articleMarkers = [];
+}
+
+function renderArticleMarkers(articles) {
+  clearArticleMarkers();
+  articles.forEach(a => {
+    const marker = L.marker([a.lat, a.lon]).addTo(state.map);
+    marker.on('click', () => openArticlePopup(marker, a));
+    state.articleMarkers.push(marker);
+  });
+}
+
+function openArticlePopup(marker, article) {
+  const isCurrent = state.currentArticle && state.currentArticle.title === article.title;
+  const html = `
+    <div class="popup">
+      ${article.thumb ? `<div class="popup-thumb"><img src="${article.thumb}" alt=""></div>` : ''}
+      <div class="popup-body">
+        <h3 class="popup-title"></h3>
+        <p class="popup-meta">${formatDistance(article.distance)}</p>
+        <p class="popup-extract"></p>
+        <button class="popup-play ${isCurrent && state.isPlaying ? 'playing' : ''}" id="popupPlayBtn">
+          ${isCurrent && state.isPlaying ? '⏹ Stop' : '▶ Play article'}
+        </button>
+      </div>
+    </div>
+  `;
+  marker.bindPopup(html, { maxWidth: 260, minWidth: 240, closeButton: true }).openPopup();
+  setTimeout(() => {
+    const root = document.querySelector('.leaflet-popup-content');
+    if (!root) return;
+    root.querySelector('.popup-title').textContent = article.title;
+    root.querySelector('.popup-extract').textContent = article.extract;
+    const btn = root.querySelector('#popupPlayBtn');
+    if (btn) {
+      btn.addEventListener('click', () => {
+        if (state.currentArticle && state.currentArticle.title === article.title && state.isPlaying) {
+          stopPlayback();
+        } else {
+          startArticle(article);
+        }
+      });
+    }
+  }, 0);
+}
+
+function formatDistance(m) {
+  if (m < 1000) return `${Math.round(m)} m away`;
+  return `${(m / 1000).toFixed(1)} km away`;
+}
+
+function chunkText(text) {
+  const sentences = text.match(/[^.!?]+[.!?]+[\s]*|[^.!?]+$/g) || [text];
+  const chunks = [];
+  let buf = '';
+  for (const s of sentences) {
+    if ((buf + s).length > 200 && buf) { chunks.push(buf.trim()); buf = s; }
+    else buf += s;
+  }
+  if (buf.trim()) chunks.push(buf.trim());
+  return chunks;
+}
+
+async function startArticle(article) {
+  stopPlayback();
+  toast('Loading full article…');
+  let full;
+  try {
+    const sections = await fetchFullArticle(article.title);
+    full = { ...article, sections };
+  } catch (e) {
+    toast('Failed to load: ' + e.message, 'error');
+    return;
+  }
+  if (!full.sections.length) { toast('No content found', 'error'); return; }
+  hideToast();
+  state.currentArticle = full;
+  state.currentSectionIdx = 0;
+  playCurrentSection();
+  showNowPlaying();
+}
+
+function playCurrentSection() {
+  const art = state.currentArticle;
+  if (!art) return;
+  const section = art.sections[state.currentSectionIdx];
+  if (!section) { stopPlayback(); return; }
+  const fullText = (section.heading && section.heading !== 'Introduction')
+    ? section.heading + '. ' + section.text
+    : section.text;
+  state.currentChunks = chunkText(fullText);
+  state.currentChunkIdx = 0;
+  state.isPlaying = true;
+  updateNowPlayingUI();
+  speakNextChunk();
+  refreshActivePopupButton();
+}
+
+function speakNextChunk() {
+  if (!state.isPlaying) return;
+  if (state.currentChunkIdx >= state.currentChunks.length) {
+    state.currentSectionIdx++;
+    if (state.currentSectionIdx < state.currentArticle.sections.length) playCurrentSection();
+    else stopPlayback();
+    return;
+  }
+  const chunk = state.currentChunks[state.currentChunkIdx];
+  const utter = new SpeechSynthesisUtterance(chunk);
+  utter.rate = 1.0; utter.pitch = 1.0; utter.lang = 'en-US';
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => /en[-_]US/i.test(v.lang) && /samantha|alex|karen|daniel/i.test(v.name))
+                 || voices.find(v => /en[-_]US/i.test(v.lang));
+  if (preferred) utter.voice = preferred;
+  utter.onend = () => { if (state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
+  utter.onerror = () => { if (state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
+  window.speechSynthesis.speak(utter);
+}
+
+function stopPlayback() {
+  state.isPlaying = false;
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  state.currentArticle = null;
+  state.currentSectionIdx = 0;
+  state.currentChunks = [];
+  state.currentChunkIdx = 0;
+  hideNowPlaying();
+  refreshActivePopupButton();
+}
+
+function togglePause() {
+  if (!state.currentArticle) return;
+  if (state.isPlaying) {
+    window.speechSynthesis.pause();
+    state.isPlaying = false;
+    playPauseBtn.textContent = '▶';
+    playPauseBtn.classList.remove('pause');
+  } else {
+    window.speechSynthesis.resume();
+    state.isPlaying = true;
+    playPauseBtn.textContent = '⏸';
+    playPauseBtn.classList.add('pause');
+  }
+}
+
+function skipSection() {
+  if (!state.currentArticle) return;
+  window.speechSynthesis.cancel();
+  state.currentSectionIdx++;
+  if (state.currentSectionIdx >= state.currentArticle.sections.length) stopPlayback();
+  else playCurrentSection();
+}
+
+function showNowPlaying() { nowPlaying.classList.add('active'); updateNowPlayingUI(); }
+function hideNowPlaying() { nowPlaying.classList.remove('active'); }
+
+function updateNowPlayingUI() {
+  if (!state.currentArticle) return;
+  npTitle.textContent = state.currentArticle.title;
+  const sec = state.currentArticle.sections[state.currentSectionIdx];
+  const total = state.currentArticle.sections.length;
+  npSection.textContent = sec ? `${sec.heading}  ·  ${state.currentSectionIdx + 1} / ${total}` : '';
+  playPauseBtn.textContent = state.isPlaying ? '⏸' : '▶';
+  playPauseBtn.classList.toggle('pause', state.isPlaying);
+}
+
+function refreshActivePopupButton() {
+  const root = document.querySelector('.leaflet-popup-content');
+  if (!root) return;
+  const btn = root.querySelector('#popupPlayBtn');
+  const titleEl = root.querySelector('.popup-title');
+  if (!btn || !titleEl) return;
+  const title = titleEl.textContent;
+  if (state.currentArticle && state.currentArticle.title === title && state.isPlaying) {
+    btn.textContent = '⏹ Stop';
+    btn.classList.add('playing');
+  } else {
+    btn.textContent = '▶ Play article';
+    btn.classList.remove('playing');
+  }
+}
+
+function getLocation() {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
+    navigator.geolocation.getCurrentPosition(
+      p => resolve(p.coords),
+      e => reject(e),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  });
+}
+
+async function loadNearbyAt(lat, lon) {
+  toast('Finding nearby articles…');
+  setUserLocation(lat, lon);
+  state.map.setView([lat, lon], 16);
+  try {
+    const articles = await fetchNearby(lat, lon);
+    renderArticleMarkers(articles);
+    sub.textContent = `${articles.length} articles nearby · tap a pin to play`;
+    toast(`Found ${articles.length} articles`, 'ok', 2000);
+  } catch (e) {
+    toast('Error: ' + e.message, 'error', 5000);
+  }
+}
+
+async function resolveAndLoad() {
+  const val = presetSel.value;
+  if (val === 'auto') {
+    toast('Getting your location…');
+    try {
+      const c = await getLocation();
+      await loadNearbyAt(c.latitude, c.longitude);
+    } catch (e) {
+      toast('Location denied — using Greenpoint', 'error', 3000);
+      await loadNearbyAt(40.7308, -73.9544);
+    }
+  } else {
+    const [lat, lon] = val.split(',').map(Number);
+    await loadNearbyAt(lat, lon);
+  }
+}
+
+playPauseBtn.addEventListener('click', togglePause);
+skipBtn.addEventListener('click', skipSection);
+recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
+refreshBtn.addEventListener('click', resolveAndLoad);
+presetSel.addEventListener('change', resolveAndLoad);
+
+initMap(40.7308, -73.9544);
+resolveAndLoad();
+
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => {};
+  window.speechSynthesis.getVoices();
+}
+</script>
+</body>
+</html>
