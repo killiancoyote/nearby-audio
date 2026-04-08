@@ -39,19 +39,50 @@
   }
   .fc-btn:active { background: #2a2a2a; }
 
-  .preset-picker {
-    position: absolute; top: 72px; left: 12px; z-index: 1000;
+  .search-bar {
+    position: absolute; top: 72px; left: 12px; right: 68px; z-index: 1000;
+    display: flex; gap: 0;
     background: rgba(26,26,26,0.95); border: 1px solid #333;
-    border-radius: 12px;
+    border-radius: 12px; overflow: hidden;
     backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   }
-  .preset-picker select {
-    background: transparent; color: #f5f5f5; border: none;
-    padding: 12px 32px 12px 14px; font-size: 13px; font-weight: 500;
-    appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f5f5f5' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center;
+  .search-bar input {
+    flex: 1; background: transparent; color: #f5f5f5; border: none;
+    padding: 12px 14px; font-size: 14px; font-weight: 400;
+    outline: none; min-width: 0;
   }
+  .search-bar input::placeholder { color: #666; }
+  .search-bar button {
+    background: transparent; border: none; color: #888; padding: 0 14px;
+    font-size: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  .search-bar button:active { color: #f5f5f5; }
+  .search-results {
+    position: absolute; top: 116px; left: 12px; right: 68px; z-index: 1001;
+    background: rgba(26,26,26,0.98); border: 1px solid #333;
+    border-radius: 12px; overflow: hidden; display: none;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    max-height: 240px; overflow-y: auto;
+  }
+  .search-results.visible { display: block; }
+  .sr-item {
+    padding: 12px 14px; cursor: pointer; border-bottom: 1px solid #222;
+    font-size: 13px; color: #ccc;
+  }
+  .sr-item:last-child { border-bottom: none; }
+  .sr-item:active { background: #2a2a2a; }
+  .sr-item .sr-name { font-weight: 600; color: #f5f5f5; }
+  .sr-item .sr-detail { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .search-area-btn {
+    position: absolute; top: 116px; left: 50%; transform: translateX(-50%);
+    z-index: 1000; background: rgba(26,26,26,0.95); border: 1px solid #333;
+    border-radius: 20px; padding: 10px 18px; font-size: 13px; font-weight: 600;
+    color: #2563eb; cursor: pointer; display: none;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  .search-area-btn:active { background: #2a2a2a; }
+  .search-area-btn.visible { display: block; }
 
   .toast {
     position: absolute; top: 72px; left: 50%; transform: translateX(-50%);
@@ -210,18 +241,12 @@
     <div class="sub" id="sub">Tap a pin to play an article</div>
   </div>
 
-  <div class="preset-picker">
-    <select id="locationPreset">
-      <option value="auto">My location</option>
-      <option value="40.7308,-73.9544" selected>Greenpoint</option>
-      <option value="40.7223,-73.9874">Williamsburg</option>
-      <option value="40.7794,-73.9632">Met Museum</option>
-      <option value="40.7484,-73.9857">Empire State</option>
-      <option value="48.8584,2.2945">Eiffel Tower</option>
-      <option value="51.5007,-0.1246">Westminster</option>
-      <option value="35.6595,139.7004">Shibuya</option>
-    </select>
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Search places..." autocomplete="off">
+    <button id="searchClear" style="display:none;">&times;</button>
   </div>
+  <div class="search-results" id="searchResults"></div>
+  <button class="search-area-btn" id="searchAreaBtn">Search this area</button>
 
   <div class="floating-controls">
     <button class="fc-btn" id="zoomInBtn" title="Zoom in">+</button>
@@ -294,7 +319,10 @@ const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const recenterBtn = document.getElementById('recenterBtn');
 const refreshBtn = document.getElementById('refreshBtn');
-const presetSel = document.getElementById('locationPreset');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const searchResults = document.getElementById('searchResults');
+const searchAreaBtn = document.getElementById('searchAreaBtn');
 
 let toastTimer = null;
 function toast(msg, type, duration = 3000) {
@@ -652,23 +680,104 @@ async function loadNearbyAt(lat, lon) {
   }
 }
 
-async function resolveAndLoad() {
-  const val = presetSel.value;
-  if (val === 'auto') {
-    toast('Getting your location…');
-    try {
-      const c = await getLocation();
-      await loadNearbyAt(c.latitude, c.longitude);
-    } catch (e) {
-      toast('Location denied — using Greenpoint', 'error', 3000);
-      await loadNearbyAt(40.7308, -73.9544);
-    }
-  } else {
-    const [lat, lon] = val.split(',').map(Number);
-    await loadNearbyAt(lat, lon);
+async function initWithMyLocation() {
+  toast('Getting your location…');
+  try {
+    const c = await getLocation();
+    await loadNearbyAt(c.latitude, c.longitude);
+  } catch (e) {
+    toast('Location unavailable — showing Greenpoint', 'error', 3000);
+    await loadNearbyAt(40.7308, -73.9544);
   }
 }
 
+// --- Search (Nominatim geocoder, free, no API key) ---
+let searchTimeout = null;
+
+async function searchPlaces(query) {
+  if (!query || query.length < 2) { hideSearchResults(); return; }
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+  try {
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    const data = await res.json();
+    showSearchResults(data);
+  } catch (e) {
+    hideSearchResults();
+  }
+}
+
+function showSearchResults(results) {
+  if (!results.length) { hideSearchResults(); return; }
+  searchResults.innerHTML = results.map((r, i) => `
+    <div class="sr-item" data-idx="${i}">
+      <div class="sr-name">${escHtml(r.display_name.split(',')[0])}</div>
+      <div class="sr-detail">${escHtml(r.display_name.split(',').slice(1, 3).join(',').trim())}</div>
+    </div>
+  `).join('');
+  searchResults.classList.add('visible');
+  searchResults.querySelectorAll('.sr-item').forEach((el, i) => {
+    el.addEventListener('click', () => {
+      const r = results[i];
+      const lat = parseFloat(r.lat), lon = parseFloat(r.lon);
+      searchInput.value = r.display_name.split(',')[0];
+      hideSearchResults();
+      loadNearbyAt(lat, lon);
+    });
+  });
+}
+
+function hideSearchResults() {
+  searchResults.classList.remove('visible');
+  searchResults.innerHTML = '';
+}
+
+searchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  const q = searchInput.value.trim();
+  searchClear.style.display = q ? 'block' : 'none';
+  searchTimeout = setTimeout(() => searchPlaces(q), 300);
+});
+
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim().length >= 2) searchPlaces(searchInput.value.trim());
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.style.display = 'none';
+  hideSearchResults();
+});
+
+// Close search results when tapping elsewhere on the map
+document.getElementById('map').addEventListener('click', hideSearchResults);
+
+// --- "Search this area" button ---
+let lastLoadedCenter = null;
+
+function onMapMoveEnd() {
+  if (!lastLoadedCenter) return;
+  const center = state.map.getCenter();
+  const dist = state.map.distance(center, lastLoadedCenter);
+  if (dist > 300) {
+    searchAreaBtn.classList.add('visible');
+  } else {
+    searchAreaBtn.classList.remove('visible');
+  }
+}
+
+const origLoadNearbyAt = loadNearbyAt;
+loadNearbyAt = async function(lat, lon) {
+  await origLoadNearbyAt(lat, lon);
+  lastLoadedCenter = L.latLng(lat, lon);
+  searchAreaBtn.classList.remove('visible');
+};
+
+searchAreaBtn.addEventListener('click', () => {
+  const center = state.map.getCenter();
+  loadNearbyAt(center.lat, center.lng);
+});
+
+// --- Player controls ---
 playPauseBtn.addEventListener('click', togglePause);
 nextSectionBtn.addEventListener('click', () => skipSection(1));
 prevSectionBtn.addEventListener('click', () => skipSection(-1));
@@ -678,11 +787,14 @@ playerClose.addEventListener('click', stopPlayback);
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
-refreshBtn.addEventListener('click', resolveAndLoad);
-presetSel.addEventListener('change', resolveAndLoad);
+refreshBtn.addEventListener('click', () => {
+  const center = state.map.getCenter();
+  loadNearbyAt(center.lat, center.lng);
+});
 
 initMap(40.7308, -73.9544);
-resolveAndLoad();
+state.map.on('moveend', onMapMoveEnd);
+initWithMyLocation();
 
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => {};

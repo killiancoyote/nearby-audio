@@ -95,6 +95,8 @@ appFrame.addEventListener('load', async () => {
   assert('No getElementById nowPlaying', !src.match(/getElementById\(['"]nowPlaying['"]\)/));
   assert('No getElementById npTitle', !src.match(/getElementById\(['"]npTitle['"]\)/));
   assert('No getElementById skipBtn', !src.match(/getElementById\(['"]skipBtn['"]\)/));
+  assert('No getElementById locationPreset', !src.match(/getElementById\(['"]locationPreset['"]\)/));
+  assert('No refs to presetSel', !src.match(/\bpresetSel\b/));
 
   // ===== DOM elements exist =====
   section('Player DOM elements');
@@ -111,7 +113,8 @@ appFrame.addEventListener('load', async () => {
 
   section('Map DOM elements');
   assert('#map exists', !!doc.getElementById('map'));
-  assert('#locationPreset exists', !!doc.getElementById('locationPreset'));
+  assert('#searchInput exists', !!doc.getElementById('searchInput'));
+  assert('#searchAreaBtn exists', !!doc.getElementById('searchAreaBtn'));
   assert('#zoomInBtn exists', !!doc.getElementById('zoomInBtn'));
   assert('#zoomOutBtn exists', !!doc.getElementById('zoomOutBtn'));
 
