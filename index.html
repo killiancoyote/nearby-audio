@@ -91,6 +91,15 @@
   }
   .popup-play:active { background: #1d4ed8; }
   .popup-play.playing { background: #ef4444; }
+  .popup-links {
+    display: flex; gap: 8px; margin-top: 8px;
+  }
+  .popup-link {
+    flex: 1; padding: 8px; background: #2a2a2a; color: #ccc;
+    border: 1px solid #444; border-radius: 8px; font-size: 12px; font-weight: 500;
+    text-align: center; text-decoration: none; cursor: pointer;
+  }
+  .popup-link:active { background: #3a3a3a; }
 
   .user-dot {
     width: 18px; height: 18px; border-radius: 50%;
@@ -142,6 +151,8 @@
   </div>
 
   <div class="floating-controls">
+    <button class="fc-btn" id="zoomInBtn" title="Zoom in">+</button>
+    <button class="fc-btn" id="zoomOutBtn" title="Zoom out">&minus;</button>
     <button class="fc-btn" id="recenterBtn" title="Recenter">&#8857;</button>
     <button class="fc-btn" id="refreshBtn" title="Refresh">&#8635;</button>
   </div>
@@ -175,6 +186,8 @@ const npTitle = document.getElementById('npTitle');
 const npSection = document.getElementById('npSection');
 const playPauseBtn = document.getElementById('playPauseBtn');
 const skipBtn = document.getElementById('skipBtn');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
 const recenterBtn = document.getElementById('recenterBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const presetSel = document.getElementById('locationPreset');
@@ -228,32 +241,29 @@ async function fetchNearby(lat, lon) {
 }
 
 async function fetchFullArticle(title) {
-  const url = `https://en.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(title)}`;
+  const url = `https://en.wikipedia.org/api/rest_v1/page/html/${encodeURIComponent(title)}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Article fetch HTTP ' + res.status);
-  const data = await res.json();
+  const html = await res.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('sup, table, style, script, .reference, .mw-editsection, .mw-empty-elt, figure, .infobox, .navbox, .sidebar, .metadata').forEach(el => el.remove());
   const sections = [];
-  if (data.lead && data.lead.sections && data.lead.sections[0]) {
-    const leadText = stripHtml(data.lead.sections[0].text || '');
-    if (leadText.trim()) sections.push({ heading: 'Introduction', text: leadText });
-  }
-  if (data.remaining && data.remaining.sections) {
-    let current = null;
-    for (const sec of data.remaining.sections) {
-      const heading = (sec.line || '').replace(/<[^>]+>/g, '').trim();
-      const text = stripHtml(sec.text || '');
-      if (sec.toclevel === 1) {
-        if (current) sections.push(current);
-        current = { heading: heading || 'Section', text };
-      } else if (current) {
-        if (heading) current.text += '. ' + heading + '. ';
-        current.text += text;
-      }
-    }
-    if (current) sections.push(current);
-  }
+  const sectionEls = doc.querySelectorAll('section');
   const SKIP = /^(references?|external links?|see also|notes?|further reading|bibliography|citations?|footnotes?|sources?)$/i;
-  return sections.filter(s => !SKIP.test(s.heading) && s.text.trim().length > 0);
+  if (sectionEls.length > 0) {
+    sectionEls.forEach((sec, i) => {
+      const headingEl = sec.querySelector('h1, h2, h3, h4');
+      const heading = headingEl ? headingEl.textContent.trim() : (i === 0 ? 'Introduction' : 'Section');
+      if (headingEl) headingEl.remove();
+      if (SKIP.test(heading)) return;
+      const text = (sec.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
+      if (text.length > 0) sections.push({ heading, text });
+    });
+  } else {
+    const body = (doc.body.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
+    if (body.length > 0) sections.push({ heading: 'Introduction', text: body });
+  }
+  return sections;
 }
 
 function stripHtml(html) {
@@ -289,6 +299,10 @@ function openArticlePopup(marker, article) {
         <button class="popup-play ${isCurrent && state.isPlaying ? 'playing' : ''}" id="popupPlayBtn">
           ${isCurrent && state.isPlaying ? '⏹ Stop' : '▶ Play article'}
         </button>
+        <div class="popup-links">
+          <a class="popup-link" href="https://en.wikipedia.org/wiki/${encodeURIComponent(article.title)}" target="_blank">Wikipedia</a>
+          <a class="popup-link" href="https://www.google.com/maps/dir/?api=1&destination=${article.lat},${article.lon}" target="_blank">Directions</a>
+        </div>
       </div>
     </div>
   `;
@@ -490,6 +504,8 @@ async function resolveAndLoad() {
 
 playPauseBtn.addEventListener('click', togglePause);
 skipBtn.addEventListener('click', skipSection);
+zoomInBtn.addEventListener('click', () => state.map.zoomIn());
+zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
 refreshBtn.addEventListener('click', resolveAndLoad);
 presetSel.addEventListener('change', resolveAndLoad);
