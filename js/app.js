@@ -63,61 +63,61 @@ tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 
 // --- Drag gesture on player handle + mini area ---
 let dragStartY = 0, dragStartH = 0, isDragging = false;
-const SNAP_PEEK = 0.3;
-const SNAP_FULL = 0.75;
 
 function onDragStart(clientY) {
   isDragging = true;
   dragStartY = clientY;
   dragStartH = player.offsetHeight;
+  // Lock to current height and enable smooth dragging
   player.style.transition = 'none';
+  player.style.height = dragStartH + 'px';
+  player.style.maxHeight = 'none';
+  player.style.overflow = 'hidden';
 }
 
 function onDragMove(clientY) {
   if (!isDragging) return;
   const dy = dragStartY - clientY;
-  const newH = Math.max(0, Math.min(window.innerHeight * 0.9, dragStartH + dy));
-  player.style.maxHeight = newH + 'px';
+  const newH = Math.max(80, Math.min(window.innerHeight * 0.85, dragStartH + dy));
+  player.style.height = newH + 'px';
 }
 
 function onDragEnd(clientY) {
   if (!isDragging) return;
   isDragging = false;
   const dy = dragStartY - clientY;
-  const currentH = player.offsetHeight;
-  const vh = window.innerHeight;
+
+  // Clean up inline drag styles and animate to target state
+  player.style.transition = 'height 0.3s ease';
 
   if (dy > 50 && !playerExpanded) {
-    player.style.maxHeight = currentH + 'px';
-    requestAnimationFrame(() => {
-      player.style.transition = 'max-height 0.3s ease';
-      player.style.maxHeight = '';
-      expandPlayer();
-      setTimeout(() => { player.style.transition = ''; }, 300);
-    });
+    // Dragged up from peek → expand
+    player.style.height = (window.innerHeight * 0.85) + 'px';
+    setTimeout(() => { clearDragStyles(); expandPlayer(); }, 300);
   } else if (dy < -50 && playerExpanded) {
-    player.style.maxHeight = currentH + 'px';
-    requestAnimationFrame(() => {
-      player.style.transition = 'max-height 0.3s ease';
-      collapsePlayer();
-      setTimeout(() => { player.style.transition = ''; player.style.maxHeight = ''; }, 300);
-    });
+    // Dragged down from expanded → collapse to peek
+    player.style.height = '';
+    setTimeout(() => { clearDragStyles(); collapsePlayer(); }, 300);
   } else if (dy < -50 && playerPeek && !playerExpanded) {
-    player.style.maxHeight = currentH + 'px';
-    requestAnimationFrame(() => {
-      player.style.transition = 'max-height 0.3s ease';
-      collapsePlayer();
-      setTimeout(() => { player.style.transition = ''; player.style.maxHeight = ''; }, 300);
-    });
+    // Dragged down from peek → stay in peek
+    player.style.height = '';
+    setTimeout(() => { clearDragStyles(); collapsePlayer(); }, 300);
   } else {
-    const targetH = playerExpanded ? vh * SNAP_FULL : (playerPeek ? vh * SNAP_PEEK : currentH);
-    player.style.maxHeight = currentH + 'px';
-    requestAnimationFrame(() => {
-      player.style.transition = 'max-height 0.3s ease';
-      player.style.maxHeight = targetH + 'px';
-      setTimeout(() => { player.style.transition = ''; player.style.maxHeight = ''; }, 300);
-    });
+    // Small drag → snap back to current state
+    if (playerExpanded) {
+      player.style.height = (window.innerHeight * 0.85) + 'px';
+    } else {
+      player.style.height = '';
+    }
+    setTimeout(() => { clearDragStyles(); }, 300);
   }
+}
+
+function clearDragStyles() {
+  player.style.transition = '';
+  player.style.height = '';
+  player.style.maxHeight = '';
+  player.style.overflow = '';
 }
 
 playerHandle.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });

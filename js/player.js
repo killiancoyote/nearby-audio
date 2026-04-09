@@ -21,6 +21,7 @@ export let speedIdx = 1;
 export let playerExpanded = false;
 export let playerPeek = false;
 let activePlayerTab = 'text';
+let utteranceGen = 0; // generation counter to ignore stale onend/onerror callbacks
 
 export async function startArticle(article) {
   stopPlayback();
@@ -69,13 +70,15 @@ export function speakNextChunk() {
   const preferred = voices.find(v => /en[-_]US/i.test(v.lang) && /samantha|alex|karen|daniel/i.test(v.name))
                  || voices.find(v => /en[-_]US/i.test(v.lang));
   if (preferred) utter.voice = preferred;
-  utter.onend = () => { if (state.isPlaying) { state.currentChunkIdx++; updateArticleTextHighlight(); speakNextChunk(); } };
-  utter.onerror = () => { if (state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
+  const gen = utteranceGen;
+  utter.onend = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; updateArticleTextHighlight(); speakNextChunk(); } };
+  utter.onerror = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
   window.speechSynthesis.speak(utter);
 }
 
 export function stopPlayback() {
   state.isPlaying = false;
+  utteranceGen++;
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   state.currentArticle = null;
   state.currentSectionIdx = 0;
@@ -99,6 +102,7 @@ export function togglePause() {
 
 export function skipSection(dir) {
   if (!state.currentArticle) return;
+  utteranceGen++;
   window.speechSynthesis.cancel();
   state.currentSectionIdx += dir;
   if (state.currentSectionIdx < 0) state.currentSectionIdx = 0;
@@ -108,6 +112,7 @@ export function skipSection(dir) {
 
 export function jumpToSection(idx) {
   if (!state.currentArticle) return;
+  utteranceGen++;
   window.speechSynthesis.cancel();
   state.currentSectionIdx = idx;
   playCurrentSection();
@@ -117,6 +122,7 @@ export function cycleSpeed() {
   speedIdx = (speedIdx + 1) % SPEEDS.length;
   speedBtn.textContent = SPEEDS[speedIdx] + 'x';
   if (state.isPlaying) {
+    utteranceGen++;
     window.speechSynthesis.cancel();
     speakNextChunk();
   }
@@ -179,6 +185,7 @@ export function renderArticleText() {
     el.addEventListener('click', () => {
       const si = parseInt(el.dataset.si);
       const ci = parseInt(el.dataset.ci);
+      utteranceGen++;
       window.speechSynthesis.cancel();
       state.currentSectionIdx = si;
       const sec = state.currentArticle.sections[si];
