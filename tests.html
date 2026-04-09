@@ -74,6 +74,8 @@ appFrame.addEventListener('load', async () => {
   assert('escHtml', typeof app.escHtml === 'function');
   assert('formatDistance', typeof app.formatDistance === 'function');
   assert('openArticlePopup', typeof app.openArticlePopup === 'function');
+  assert('classifyArticle', typeof app.classifyArticle === 'function');
+  assert('makePinIcon', typeof app.makePinIcon === 'function');
 
   section('Player functions exist');
   assert('updatePlayerUI', typeof app.updatePlayerUI === 'function');
@@ -139,6 +141,24 @@ appFrame.addEventListener('load', async () => {
   assertEq('meters', app.formatDistance(150), '150 m away');
   assertEq('meters boundary', app.formatDistance(999), '999 m away');
   assertEq('kilometers', app.formatDistance(2500), '2.5 km away');
+
+  // ===== classifyArticle =====
+  section('classifyArticle');
+  assertEq('museum', app.classifyArticle('Art museum in New York City').id, 'museum');
+  assertEq('park', app.classifyArticle('Public park in Manhattan').id, 'park');
+  assertEq('church', app.classifyArticle('Roman Catholic cathedral').id, 'religion');
+  assertEq('school', app.classifyArticle('Public university in Brooklyn').id, 'education');
+  assertEq('station', app.classifyArticle('New York City Subway station').id, 'transport');
+  assertEq('building', app.classifyArticle('Office skyscraper in Manhattan').id, 'building');
+  assertEq('historic', app.classifyArticle('Historic district in Brooklyn').id, 'historic');
+  assertEq('food', app.classifyArticle('American restaurant chain').id, 'food');
+  assertEq('default for unknown', app.classifyArticle('Neighborhood in Brooklyn').id, 'default');
+  assertEq('default for empty', app.classifyArticle('').id, 'default');
+  assertEq('default for null', app.classifyArticle(null).id, 'default');
+
+  // ===== DOM: empty state =====
+  section('Empty state DOM');
+  assert('#emptyState exists', !!doc.getElementById('emptyState'));
 
   // ===== Speed settings (block-scoped, use eval) =====
   section('Speed control');
