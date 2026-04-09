@@ -51,13 +51,12 @@ function showSummary() {
 }
 
 const appFrame = document.getElementById('appFrame');
-function appEval(expr) { return appFrame.contentWindow.eval(expr); }
 
 appFrame.addEventListener('load', async () => {
   const app = appFrame.contentWindow;
 
-  // Wait a moment for app initialization
-  await new Promise(r => setTimeout(r, 1000));
+  // ES modules are deferred — wait for app to initialize
+  await new Promise(r => setTimeout(r, 2000));
 
   // ===== Function existence =====
   section('Core functions exist');
@@ -93,8 +92,9 @@ appFrame.addEventListener('load', async () => {
 
   // ===== No stale references in source =====
   section('No stale function references in source');
-  const resp = await fetch('index.html');
-  const src = await resp.text();
+  const jsFiles = ['js/state.js','js/categories.js','js/utils.js','js/api.js','js/player.js','js/filters.js','js/map.js','js/search.js','js/app.js'];
+  const srcs = await Promise.all(jsFiles.map(f => fetch(f).then(r => r.text())));
+  const src = srcs.join('\n');
   assert('No calls to updateNowPlayingUI()', !src.match(/updateNowPlayingUI\s*\(/));
   assert('No calls to hideNowPlaying()', !src.match(/hideNowPlaying\s*\(/));
   assert('No calls to showNowPlaying()', !src.match(/showNowPlaying\s*\(/));
@@ -170,31 +170,31 @@ appFrame.addEventListener('load', async () => {
   section('Empty state DOM');
   assert('#emptyState exists', !!doc.getElementById('emptyState'));
 
-  // ===== Speed settings (block-scoped, use eval) =====
+  // ===== Speed settings =====
   section('Speed control');
-  assert('SPEEDS is array', appEval('Array.isArray(SPEEDS)'));
-  assert('SPEEDS includes 1x', appEval('SPEEDS.includes(1)'));
-  assert('Default speed is 1x', appEval('SPEEDS[speedIdx] === 1'));
+  assert('SPEEDS is array', Array.isArray(app.SPEEDS));
+  assert('SPEEDS includes 1x', app.SPEEDS.includes(1));
+  assert('Default speed is 1x', app.SPEEDS[app.speedIdx] === 1);
 
-  // ===== State management (block-scoped, use eval) =====
+  // ===== State management =====
   section('State');
-  assert('state object exists', appEval('typeof state === "object"'));
-  assert('state.map initialized', appEval('state.map !== null'));
-  assert('state.isPlaying is false', appEval('state.isPlaying === false'));
+  assert('state object exists', typeof app.state === 'object');
+  assert('state.map initialized', app.state.map !== null);
+  assert('state.isPlaying is false', app.state.isPlaying === false);
 
   // ===== stopPlayback resets state =====
   section('stopPlayback resets state');
-  appEval('state.isPlaying = true');
-  appEval('state.currentArticle = { title: "Test", sections: [] }');
-  appEval('state.currentSectionIdx = 3');
-  appEval('state.currentChunks = ["a", "b"]');
-  appEval('state.currentChunkIdx = 1');
-  appEval('stopPlayback()');
-  assert('isPlaying → false', appEval('state.isPlaying') === false);
-  assert('currentArticle → null', appEval('state.currentArticle') === null);
-  assert('currentSectionIdx → 0', appEval('state.currentSectionIdx') === 0);
-  assert('currentChunks → []', appEval('state.currentChunks.length') === 0);
-  assert('currentChunkIdx → 0', appEval('state.currentChunkIdx') === 0);
+  app.state.isPlaying = true;
+  app.state.currentArticle = { title: 'Test', sections: [] };
+  app.state.currentSectionIdx = 3;
+  app.state.currentChunks = ['a', 'b'];
+  app.state.currentChunkIdx = 1;
+  app.stopPlayback();
+  assert('isPlaying → false', app.state.isPlaying === false);
+  assert('currentArticle → null', app.state.currentArticle === null);
+  assert('currentSectionIdx → 0', app.state.currentSectionIdx === 0);
+  assert('currentChunks → []', app.state.currentChunks.length === 0);
+  assert('currentChunkIdx → 0', app.state.currentChunkIdx === 0);
 
   // ===== Wikipedia API (live) =====
   section('Wikipedia API (live)');
