@@ -21,7 +21,7 @@
   .topbar { display: none; }
 
   .search-bar {
-    position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 1000;
+    position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 64px; z-index: 1000;
     display: flex; align-items: center; gap: 0;
     background: rgba(255,255,255,0.95); border: none;
     border-radius: 28px; overflow: hidden;
@@ -62,35 +62,59 @@
   .sr-item .sr-name { font-weight: 600; color: #1a1a1a; }
   .sr-item .sr-detail { font-size: 12px; color: #999; margin-top: 2px; }
 
-  /* --- Category filter chips --- */
-  .filter-bar {
-    position: absolute; top: calc(64px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 999;
-    display: flex; gap: 6px; padding: 0 12px;
-    overflow-x: auto; -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; -ms-overflow-style: none;
-    opacity: 0; pointer-events: none; transform: translateY(-4px);
+  /* --- Category filter --- */
+  .filter-btn {
+    position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 68px; z-index: 1000;
+    width: 44px; height: 44px; border-radius: 22px;
+    background: rgba(255,255,255,0.95); border: none;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    cursor: pointer; display: none; align-items: center; justify-content: center;
+    transition: opacity 0.2s;
+  }
+  .filter-btn.visible { display: flex; }
+  .filter-btn:active { opacity: 0.7; }
+  .filter-btn svg { width: 20px; height: 20px; fill: #666; }
+  .filter-btn.has-filter svg { fill: #2563eb; }
+
+  .filter-sheet {
+    position: absolute; top: calc(68px + env(safe-area-inset-top)); right: 12px;
+    z-index: 1002; background: rgba(255,255,255,0.98);
+    border-radius: 16px; padding: 12px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.04);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    min-width: 200px; max-width: 260px;
+    opacity: 0; pointer-events: none; transform: translateY(-6px) scale(0.97);
+    transform-origin: top right;
     transition: opacity 0.2s ease, transform 0.2s ease;
   }
-  .filter-bar.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-  .filter-bar::-webkit-scrollbar { display: none; }
-  .filter-chip {
-    flex-shrink: 0; display: flex; align-items: center; gap: 5px;
-    padding: 6px 12px; border-radius: 16px;
-    background: rgba(255,255,255,0.92); border: 1.5px solid rgba(0,0,0,0.08);
-    font-size: 12px; font-weight: 600; color: #666;
-    cursor: pointer; white-space: nowrap;
-    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-    transition: opacity 0.15s ease, border-color 0.15s ease;
+  .filter-sheet.visible { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+  .filter-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px; cursor: pointer;
+    transition: background 0.1s;
   }
-  .filter-chip .fc-dot {
-    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  .filter-row:active { background: rgba(0,0,0,0.04); }
+  .filter-row .fr-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
   }
-  .filter-chip.off { opacity: 0.45; }
-  .filter-chip.off .fc-dot { background: #ccc !important; }
-  .filter-chip:active { opacity: 0.7; }
+  .filter-row .fr-label { font-size: 14px; color: #1a1a1a; flex: 1; }
+  .filter-row .fr-check {
+    width: 20px; height: 20px; border-radius: 5px; border: 2px solid #d0d0d0;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .filter-row.on .fr-check { background: #1a1a1a; border-color: #1a1a1a; }
+  .filter-row.on .fr-check::after {
+    content: ''; width: 6px; height: 10px;
+    border: solid white; border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-1px, -1px);
+  }
+  .filter-row.off .fr-label { color: #999; }
+  .filter-row.off .fr-dot { opacity: 0.3; }
 
   .search-area-btn {
-    position: absolute; top: calc(100px + env(safe-area-inset-top)); left: 50%; z-index: 1000;
+    position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 50%; z-index: 1000;
     background: white; border: none;
     border-radius: 20px; padding: 10px 20px; font-size: 14px; font-weight: 600;
     color: #1a1a1a; cursor: pointer;
@@ -140,7 +164,7 @@
   .fc-single .fc-btn { border-radius: 10px; border-bottom: none; box-shadow: none; }
 
   .toast {
-    position: absolute; top: calc(100px + env(safe-area-inset-top)); left: 50%; z-index: 1001;
+    position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 50%; z-index: 1001;
     background: rgba(255,255,255,0.95); border: none;
     border-radius: 20px; padding: 10px 20px; font-size: 14px; color: #444; font-weight: 500;
     box-shadow: 0 2px 12px rgba(0,0,0,0.1);
@@ -259,7 +283,10 @@
 
   .player-handle {
     width: 36px; height: 4px; background: #d0d0d0; border-radius: 2px;
-    margin: 8px auto 0; flex-shrink: 0; cursor: pointer;
+    margin: 0 auto; flex-shrink: 0; cursor: pointer;
+  }
+  .player-handle-area {
+    padding: 10px 0 2px; cursor: pointer; display: flex; justify-content: center;
   }
 
   .player-mini {
@@ -395,7 +422,10 @@
     <button class="search-clear" id="searchClear">&times;</button>
   </div>
   <div class="search-results" id="searchResults"></div>
-  <div class="filter-bar" id="filterBar"></div>
+  <button class="filter-btn" id="filterBtn" title="Filter categories">
+    <svg viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+  </button>
+  <div class="filter-sheet" id="filterSheet"></div>
   <button class="search-area-btn" id="searchAreaBtn">Search this area</button>
 
   <div class="floating-controls">
@@ -418,7 +448,7 @@
   </div>
 
   <div class="player" id="player">
-    <div class="player-handle" id="playerHandle"></div>
+    <div class="player-handle-area" id="playerHandle"><div class="player-handle"></div></div>
     <div class="player-mini">
       <div class="player-info">
         <div class="player-title" id="playerTitle"></div>
@@ -489,7 +519,8 @@ const searchInput = document.getElementById('searchInput');
 const searchClear = document.getElementById('searchClear');
 const searchResults = document.getElementById('searchResults');
 const searchAreaBtn = document.getElementById('searchAreaBtn');
-const filterBar = document.getElementById('filterBar');
+const filterBtn = document.getElementById('filterBtn');
+const filterSheet = document.getElementById('filterSheet');
 const playerText = document.getElementById('playerText');
 const tabText = document.getElementById('tabText');
 const tabSections = document.getElementById('tabSections');
@@ -540,24 +571,49 @@ function makePinIcon(cat, delay) {
 // --- Filter state ---
 const activeFilters = new Set([...CATEGORIES.map(c => c.id), 'default']);
 let allFetchedArticles = [];
+let filterSheetOpen = false;
 
 function buildFilterBar() {
+  renderFilterSheet();
+}
+
+function renderFilterSheet() {
   const allCats = [...CATEGORIES, DEFAULT_CAT];
-  filterBar.innerHTML = allCats.map(c => {
+  filterSheet.innerHTML = allCats.map(c => {
     const label = c.id === 'default' ? 'Other' : c.id.charAt(0).toUpperCase() + c.id.slice(1);
-    return `<button class="filter-chip${activeFilters.has(c.id) ? '' : ' off'}" data-cat="${c.id}">
-      <span class="fc-dot" style="background:${c.color}"></span>${label}
-    </button>`;
+    const on = activeFilters.has(c.id);
+    return `<div class="filter-row ${on ? 'on' : 'off'}" data-cat="${c.id}">
+      <span class="fr-dot" style="background:${c.color}"></span>
+      <span class="fr-label">${label}</span>
+      <span class="fr-check"></span>
+    </div>`;
   }).join('');
-  filterBar.querySelectorAll('.filter-chip').forEach(el => {
+  filterSheet.querySelectorAll('.filter-row').forEach(el => {
     el.addEventListener('click', () => {
       const cat = el.dataset.cat;
       if (activeFilters.has(cat)) activeFilters.delete(cat);
       else activeFilters.add(cat);
+      el.classList.toggle('on', activeFilters.has(cat));
       el.classList.toggle('off', !activeFilters.has(cat));
       applyFilters();
+      updateFilterBtnState();
     });
   });
+}
+
+function toggleFilterSheet() {
+  filterSheetOpen = !filterSheetOpen;
+  filterSheet.classList.toggle('visible', filterSheetOpen);
+}
+
+function closeFilterSheet() {
+  filterSheetOpen = false;
+  filterSheet.classList.remove('visible');
+}
+
+function updateFilterBtnState() {
+  const totalCats = CATEGORIES.length + 1;
+  filterBtn.classList.toggle('has-filter', activeFilters.size < totalCats);
 }
 
 function applyFilters() {
@@ -566,11 +622,11 @@ function applyFilters() {
     if (!a) return;
     const cat = a._category || DEFAULT_CAT;
     if (activeFilters.has(cat.id)) {
-      m.getElement && m.getElement() ? m.getElement().style.display = '' : null;
+      if (m.getElement()) m.getElement().style.display = '';
       m.setOpacity(1);
     } else {
       m.setOpacity(0);
-      m.getElement && m.getElement() ? m.getElement().style.display = 'none' : null;
+      if (m.getElement()) m.getElement().style.display = 'none';
     }
   });
 }
@@ -667,11 +723,12 @@ function renderArticleMarkers(articles) {
   allFetchedArticles = articles;
   if (articles.length === 0) {
     emptyState.classList.add('visible');
-    filterBar.classList.remove('visible');
+    filterBtn.classList.remove('visible');
   } else {
     emptyState.classList.remove('visible');
-    filterBar.classList.add('visible');
+    filterBtn.classList.add('visible');
   }
+  closeFilterSheet();
   articles.forEach((a, i) => {
     const cat = classifyArticle(a.description);
     a._category = cat;
@@ -866,6 +923,10 @@ function showPlayer() {
   renderSectionsList();
   renderArticleText();
   player.classList.add('active');
+  // Auto-expand to show article text
+  playerExpanded = true;
+  player.classList.add('expanded');
+  switchPlayerTab('text');
   updatePlayerUI();
 }
 
@@ -1096,8 +1157,9 @@ searchClear.addEventListener('click', () => {
   hideSearchResults();
 });
 
-// Close search results when tapping elsewhere on the map
-document.getElementById('map').addEventListener('click', hideSearchResults);
+// Close search results and filter sheet when tapping elsewhere on the map
+document.getElementById('map').addEventListener('click', () => { hideSearchResults(); closeFilterSheet(); });
+filterBtn.addEventListener('click', toggleFilterSheet);
 
 // --- "Search this area" button ---
 let lastLoadedCenter = null;
@@ -1134,6 +1196,16 @@ playerHandle.addEventListener('click', togglePlayerExpanded);
 playerClose.addEventListener('click', stopPlayback);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
 tabSections.addEventListener('click', () => switchPlayerTab('sections'));
+
+// Swipe gesture on player mini area to expand/collapse
+let playerTouchStartY = 0;
+const playerMini = document.querySelector('.player-mini');
+playerMini.addEventListener('touchstart', e => { playerTouchStartY = e.touches[0].clientY; }, { passive: true });
+playerMini.addEventListener('touchend', e => {
+  const dy = playerTouchStartY - e.changedTouches[0].clientY;
+  if (dy > 30 && !playerExpanded) togglePlayerExpanded();
+  else if (dy < -30 && playerExpanded) togglePlayerExpanded();
+}, { passive: true });
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });

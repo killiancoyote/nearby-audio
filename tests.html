@@ -123,11 +123,12 @@ appFrame.addEventListener('load', async () => {
   assert('#searchAreaBtn exists', !!doc.getElementById('searchAreaBtn'));
   assert('#zoomInBtn exists', !!doc.getElementById('zoomInBtn'));
   assert('#zoomOutBtn exists', !!doc.getElementById('zoomOutBtn'));
-  assert('#filterBar exists', !!doc.getElementById('filterBar'));
+  assert('#filterBtn exists', !!doc.getElementById('filterBtn'));
+  assert('#filterSheet exists', !!doc.getElementById('filterSheet'));
   assert('#playerText exists', !!doc.getElementById('playerText'));
   assert('#tabText exists', !!doc.getElementById('tabText'));
   assert('#tabSections exists', !!doc.getElementById('tabSections'));
-  assert('filter chips rendered', doc.querySelectorAll('.filter-chip').length > 0);
+  assert('filter rows rendered', doc.querySelectorAll('.filter-row').length > 0);
 
   // ===== chunkText =====
   section('chunkText');
