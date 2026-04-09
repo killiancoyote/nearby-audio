@@ -249,11 +249,22 @@ export function updateArticleTextHighlight() {
     const si = parseInt(el.dataset.si);
     el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
   });
-  // Always scroll active chunk into view (even if text tab is hidden)
-  // so it's in the right position when user switches back to Article tab
   const activeChunk = playerText.querySelector('.pt-chunk.active');
-  if (activeChunk) {
-    activeChunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (activeChunk && playerExpanded && activePlayerTab === 'text') {
+    scrollToChunk(activeChunk);
+  }
+}
+
+// Scroll playerText so a chunk is centered.
+// Both el and playerText share the same offsetParent (#player),
+// so subtracting their offsetTops gives position within the scroll area.
+function scrollToChunk(el, smooth = true) {
+  const posInContainer = el.offsetTop - playerText.offsetTop;
+  const target = posInContainer - playerText.clientHeight / 2 + el.offsetHeight / 2;
+  if (smooth) {
+    playerText.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+  } else {
+    playerText.scrollTop = Math.max(0, target);
   }
 }
 
@@ -265,6 +276,11 @@ export function switchPlayerTab(tab) {
   if (tab === 'text') {
     playerText.style.display = 'block';
     document.getElementById('playerSections').style.display = 'none';
+    // Scroll to active chunk after layout fully completes (double-rAF)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const active = playerText.querySelector('.pt-chunk.active');
+      if (active) scrollToChunk(active, false);
+    }));
   } else {
     playerText.style.display = 'none';
     document.getElementById('playerSections').style.display = 'block';
