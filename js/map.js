@@ -48,7 +48,7 @@ function renderArticleMarkers(articles) {
     const cat = classifyArticle(a.description);
     a._category = cat;
     const len = (a.extract || '').length;
-    const pinSize = len > 300 ? 36 : len > 100 ? 32 : 26;
+    const pinSize = len > 300 ? 42 : len > 100 ? 32 : 22;
     const icon = makePinIcon(cat, i * 40, pinSize);
     const marker = L.marker([a.lat, a.lon], { icon }).addTo(state.map);
     marker._articleData = a;

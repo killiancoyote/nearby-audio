@@ -58,6 +58,8 @@ prevSectionBtn.addEventListener('click', () => skipSection(-1));
 speedBtn.addEventListener('click', cycleSpeed);
 playerHandle.addEventListener('click', togglePlayerExpanded);
 playerClose.addEventListener('click', stopPlayback);
+document.getElementById('bottomMinimize').addEventListener('click', collapsePlayer);
+document.getElementById('bottomStop').addEventListener('click', stopPlayback);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
 tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 

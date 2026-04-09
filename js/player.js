@@ -40,6 +40,13 @@ export async function startArticle(article) {
   state.currentArticle = full;
   state.currentSectionIdx = 0;
   highlightPlayingMarker(full.title);
+  // Close popup and recenter map to the article's pin
+  if (state.map) {
+    state.map.closePopup();
+    if (full.lat != null && full.lon != null) {
+      state.map.panTo([full.lat, full.lon], { animate: true, duration: 0.3 });
+    }
+  }
   playCurrentSection();
   showPlayer();
 }
