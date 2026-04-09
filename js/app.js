@@ -56,7 +56,11 @@ playPauseBtn.addEventListener('click', togglePause);
 nextSectionBtn.addEventListener('click', () => skipSection(1));
 prevSectionBtn.addEventListener('click', () => skipSection(-1));
 speedBtn.addEventListener('click', cycleSpeed);
-playerHandle.addEventListener('click', togglePlayerExpanded);
+playerHandle.addEventListener('click', () => {
+  togglePlayerExpanded();
+  // After toggle, update search btn suppression based on new state
+  if (playerExpanded) suppressSearchBtn(); else unsuppressSearchBtn();
+});
 playerClose.addEventListener('click', stopPlayback);
 document.getElementById('playerMinimize').addEventListener('click', collapsePlayer);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
@@ -159,8 +163,10 @@ function onDragEnd(e) {
 
   if (target === 'hidden') {
     stopPlayback();
+    unsuppressSearchBtn();
   } else {
     snapTo(target, true);
+    if (target === 'expanded') suppressSearchBtn(); else unsuppressSearchBtn();
   }
 }
 
@@ -182,24 +188,52 @@ recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.se
 document.getElementById('map').addEventListener('click', () => { hideSearchResults(); closeFilterSheet(); });
 filterBtn.addEventListener('click', toggleFilterSheet);
 
-// --- "Search this area" button ---
+// --- "Search this area" button (smart visibility) ---
 let lastLoadedCenter = null;
+let lastLoadedZoom = null;
+let searchBtnSuppressed = false; // temporarily suppressed by popup/player
 
-function onMapMoveEnd() {
-  if (!lastLoadedCenter) return;
+function shouldShowSearchBtn() {
+  if (!lastLoadedCenter) return false;
+  // Show if user panned far enough OR changed zoom significantly
   const center = state.map.getCenter();
   const dist = state.map.distance(center, lastLoadedCenter);
-  if (dist > 300) {
+  const zoomDelta = lastLoadedZoom != null ? Math.abs(state.map.getZoom() - lastLoadedZoom) : 0;
+  return dist > 300 || zoomDelta >= 2;
+}
+
+function updateSearchBtnVisibility() {
+  if (searchBtnSuppressed) {
+    searchAreaBtn.classList.remove('visible');
+    return;
+  }
+  if (shouldShowSearchBtn()) {
     searchAreaBtn.classList.add('visible');
   } else {
     searchAreaBtn.classList.remove('visible');
   }
 }
 
+// Suppress button when popup is open or player is expanded
+function suppressSearchBtn() {
+  searchBtnSuppressed = true;
+  searchAreaBtn.classList.remove('visible');
+}
+
+function unsuppressSearchBtn() {
+  searchBtnSuppressed = false;
+  updateSearchBtnVisibility();
+}
+
+function onMapMoveEnd() {
+  updateSearchBtnVisibility();
+}
+
 const _origLoadNearbyAt = loadNearbyAt;
-const wrappedLoadNearbyAt = async function(lat, lon, zoom) {
-  await _origLoadNearbyAt(lat, lon, zoom);
+const wrappedLoadNearbyAt = async function(lat, lon, zoom, opts) {
+  await _origLoadNearbyAt(lat, lon, zoom, opts);
   lastLoadedCenter = L.latLng(lat, lon);
+  lastLoadedZoom = state.map.getZoom();
   searchAreaBtn.classList.remove('visible');
 };
 // Override the window-exposed version too
@@ -207,13 +241,38 @@ window.loadNearbyAt = wrappedLoadNearbyAt;
 
 searchAreaBtn.addEventListener('click', () => {
   const center = state.map.getCenter();
-  wrappedLoadNearbyAt(center.lat, center.lng, state.map.getZoom());
+  wrappedLoadNearbyAt(center.lat, center.lng, state.map.getZoom(), { keepView: true });
 });
 
 // --- Initialize ---
 buildFilterBar();
 initMap(40.7308, -73.9544);
 state.map.on('moveend', onMapMoveEnd);
+
+// Suppress "search this area" when popup opens; unsuppress when it closes
+state.map.on('popupopen', suppressSearchBtn);
+state.map.on('popupclose', unsuppressSearchBtn);
+
+// Suppress when player expands, unsuppress when it collapses or hides
+const _origExpandPlayer = expandPlayer;
+const _origCollapsePlayer = collapsePlayer;
+const _origStopPlayback = stopPlayback;
+
+const wrappedExpandPlayer = function() { suppressSearchBtn(); _origExpandPlayer(); };
+const wrappedCollapsePlayer = function() { unsuppressSearchBtn(); _origCollapsePlayer(); };
+const wrappedStopPlayback = function() { unsuppressSearchBtn(); _origStopPlayback(); };
+
+// Re-wire controls to use wrapped versions
+document.getElementById('playerMinimize').removeEventListener('click', collapsePlayer);
+document.getElementById('playerMinimize').addEventListener('click', wrappedCollapsePlayer);
+playerClose.removeEventListener('click', stopPlayback);
+playerClose.addEventListener('click', wrappedStopPlayback);
+
+// Override window exposure
+window.expandPlayer = wrappedExpandPlayer;
+window.collapsePlayer = wrappedCollapsePlayer;
+window.stopPlayback = wrappedStopPlayback;
+
 initWithMyLocation();
 
 if ('speechSynthesis' in window) {

@@ -108,7 +108,6 @@ export function openArticlePopup(marker, article) {
   `;
   if (marker.getPopup()) marker.unbindPopup();
   marker.bindPopup(html, { maxWidth: 300, minWidth: 260, closeButton: false, className: 'popup-wrapper' }).openPopup();
-  searchAreaBtn.classList.remove('visible');
   setTimeout(() => {
     const px = state.map.latLngToContainerPoint([article.lat, article.lon]);
     const topPad = 80 + 200;
@@ -155,13 +154,25 @@ function getLocation() {
   });
 }
 
-export async function loadNearbyAt(lat, lon, zoom) {
+// Get visible map bounds as {north, south, east, west} for bbox queries
+function viewportBounds() {
+  if (!state.map) return null;
+  const b = state.map.getBounds();
+  return { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+}
+
+export async function loadNearbyAt(lat, lon, zoom, opts = {}) {
   emptyState.classList.remove('visible');
   toast('Finding nearby articles\u2026');
-  setUserLocation(lat, lon);
-  state.map.setView([lat, lon], zoom != null ? zoom : 16);
+  // Only move user dot + re-center when it's an initial load, not "search this area"
+  if (!opts.keepView) {
+    setUserLocation(lat, lon);
+    state.map.setView([lat, lon], zoom != null ? zoom : 16);
+  }
+  // Use viewport bounding box for even coverage; fall back to radius if map not ready
+  const bounds = viewportBounds();
   try {
-    const articles = await fetchNearby(lat, lon);
+    const articles = await fetchNearby(lat, lon, bounds || 1000);
     renderArticleMarkers(articles);
     sub.textContent = `${articles.length} articles nearby \u00b7 tap a pin to play`;
     if (articles.length > 0) toast(`Found ${articles.length} articles`, 'ok', 2000);
@@ -199,9 +210,10 @@ export async function initWithMyLocation() {
   toast('Getting your location\u2026');
   try {
     const c = await getLocation();
-    await loadNearbyAt(c.latitude, c.longitude);
+    // Use window.loadNearbyAt so app.js wrapper runs (sets lastLoadedCenter/Zoom)
+    await (window.loadNearbyAt || loadNearbyAt)(c.latitude, c.longitude);
   } catch (e) {
     toast('Location unavailable \u2014 showing Greenpoint', 'error', 3000);
-    await loadNearbyAt(40.7308, -73.9544);
+    await (window.loadNearbyAt || loadNearbyAt)(40.7308, -73.9544);
   }
 }
