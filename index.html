@@ -10,12 +10,12 @@
   html, body {
     margin: 0; padding: 0; height: 100%; overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    background: #0a0a0a; color: #f5f5f5;
+    background: #f5f5f0; color: #1a1a1a;
   }
-  #map { position: absolute; inset: 0; background: #0a0a0a; }
+  #map { position: absolute; inset: 0; background: #f5f5f0; }
   .leaflet-tile-pane { }
-  .leaflet-control-attribution { background: rgba(0,0,0,0.6) !important; color: #888 !important; font-size: 10px !important; }
-  .leaflet-control-attribution a { color: #aaa !important; }
+  .leaflet-control-attribution { background: rgba(255,255,255,0.7) !important; color: #999 !important; font-size: 10px !important; }
+  .leaflet-control-attribution a { color: #777 !important; }
 
   /* --- Top chrome: search bar is the primary element --- */
   .topbar { display: none; }
@@ -35,7 +35,7 @@
   .search-icon svg { width: 18px; height: 18px; fill: #999; }
   .search-bar input {
     flex: 1; background: transparent; color: #1a1a1a; border: none;
-    padding: 14px 12px; font-size: 15px; font-weight: 400;
+    padding: 14px 12px; font-size: 14px; font-weight: 400;
     outline: none; min-width: 0;
   }
   .search-bar input::placeholder { color: #999; }
@@ -65,9 +65,10 @@
   .search-area-btn {
     position: absolute; top: 68px; left: 50%; transform: translateX(-50%);
     z-index: 1000; background: white; border: none;
-    border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 600;
+    border-radius: 20px; padding: 10px 20px; font-size: 14px; font-weight: 600;
     color: #1a1a1a; cursor: pointer; display: none;
     box-shadow: 0 2px 12px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
+    letter-spacing: -0.1px;
   }
   .search-area-btn:active { background: #f5f5f5; }
   .search-area-btn.visible { display: block; }
@@ -107,7 +108,7 @@
   .toast {
     position: absolute; top: 68px; left: 50%; transform: translateX(-50%);
     z-index: 1001; background: rgba(255,255,255,0.95); border: none;
-    border-radius: 20px; padding: 10px 20px; font-size: 13px; color: #444;
+    border-radius: 20px; padding: 10px 20px; font-size: 14px; color: #444; font-weight: 500;
     box-shadow: 0 2px 12px rgba(0,0,0,0.1);
     display: none; max-width: 80%; text-align: center; white-space: nowrap;
   }
@@ -132,7 +133,7 @@
   .popup-title { font-size: 17px; font-weight: 700; margin: 0 0 4px; color: #1a1a1a; line-height: 1.25; letter-spacing: -0.2px; }
   .popup-meta { font-size: 12px; color: #999; margin: 0 0 8px; }
   .popup-extract {
-    font-size: 13px; line-height: 1.5; color: #666; margin: 0 0 14px;
+    font-size: 14px; line-height: 1.5; color: #666; margin: 0 0 14px;
     display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
   .popup-play {
@@ -146,11 +147,12 @@
     display: flex; gap: 8px; margin-top: 10px;
   }
   .popup-link {
-    flex: 1; padding: 8px; background: transparent; color: #666;
-    border: 1px solid #e0e0e0; border-radius: 8px; font-size: 12px; font-weight: 500;
+    flex: 1; padding: 10px 8px; background: #f8f8f8; color: #444;
+    border: none; border-radius: 10px; font-size: 12px; font-weight: 600;
     text-align: center; text-decoration: none; cursor: pointer;
+    letter-spacing: 0.1px;
   }
-  .popup-link:active { background: #f5f5f5; }
+  .popup-link:active { background: #eee; }
 
   .user-dot {
     width: 18px; height: 18px; border-radius: 50%;
@@ -181,7 +183,7 @@
   }
   .player-info { flex: 1; min-width: 0; }
   .player-title {
-    font-size: 15px; font-weight: 600; color: #1a1a1a;
+    font-size: 17px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.2px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .player-section-label {
@@ -221,7 +223,7 @@
   .pc-main:active { background: #333; }
   .pc-main svg { width: 24px; height: 24px; }
   .pc-speed {
-    font-size: 13px; font-weight: 700; color: #666;
+    font-size: 12px; font-weight: 700; color: #666;
     background: #f0f0f0; border: none; border-radius: 8px;
     padding: 6px 10px; min-width: 44px; text-align: center;
   }
