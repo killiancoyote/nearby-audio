@@ -46,19 +46,43 @@
     <p>No articles found in this area.<br>Try searching a different location.</p>
   </div>
 
+  <!-- Player: Spotify now-playing paradigm -->
   <div class="player" id="player">
+    <!-- Drag handle (peek + expanded) -->
     <div class="player-handle-area" id="playerHandle"><div class="player-handle"></div></div>
-    <div class="player-mini">
-      <div class="player-info">
+
+    <!-- Top bar: minimize / title / stop -->
+    <div class="player-top">
+      <button class="player-top-btn" id="playerMinimize" title="Minimize">
+        <svg viewBox="0 0 24 24"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
+      </button>
+      <div class="player-top-info">
         <div class="player-title" id="playerTitle"></div>
         <div class="player-section-label" id="playerSectionLabel"></div>
       </div>
-      <button class="player-close" id="playerClose" title="Stop">&times;</button>
+      <button class="player-top-btn" id="playerClose" title="Stop">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
     </div>
+
+    <!-- Main content: tabs + scrollable text/sections (replaces album art) -->
+    <div class="player-tabs">
+      <button class="player-tab active" id="tabText" data-tab="text">Article</button>
+      <button class="player-tab" id="tabSections" data-tab="sections">Sections</button>
+    </div>
+    <div class="player-text" id="playerText"></div>
+    <div class="player-sections" id="playerSections">
+      <div class="player-sections-title">Sections</div>
+      <div id="sectionsList"></div>
+    </div>
+
+    <!-- Progress bar -->
     <div class="player-progress">
       <div class="player-progress-bar"><div class="player-progress-fill" id="playerProgressFill"></div></div>
       <div class="player-progress-text" id="playerProgressText"></div>
     </div>
+
+    <!-- Play controls (bottom, thumb-reachable) -->
     <div class="player-controls">
       <button class="pc-btn pc-speed" id="speedBtn" title="Playback speed">1x</button>
       <button class="pc-btn" id="prevSectionBtn" title="Previous section">
@@ -71,25 +95,6 @@
         <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6z"/></svg>
       </button>
       <button class="pc-btn pc-speed" id="sleepBtn" title="Sections left" style="font-size:11px; color:#666;">--</button>
-    </div>
-    <div class="player-tabs">
-      <button class="player-tab active" id="tabText" data-tab="text">Article</button>
-      <button class="player-tab" id="tabSections" data-tab="sections">Sections</button>
-    </div>
-    <div class="player-text" id="playerText"></div>
-    <div class="player-sections" id="playerSections">
-      <div class="player-sections-title">Sections</div>
-      <div id="sectionsList"></div>
-    </div>
-    <div class="player-bottom-bar">
-      <button class="player-bottom-close" id="bottomMinimize">
-        <svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
-        Minimize
-      </button>
-      <button class="player-bottom-close" id="bottomStop">
-        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-        Stop
-      </button>
     </div>
   </div>
 

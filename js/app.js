@@ -58,8 +58,7 @@ prevSectionBtn.addEventListener('click', () => skipSection(-1));
 speedBtn.addEventListener('click', cycleSpeed);
 playerHandle.addEventListener('click', togglePlayerExpanded);
 playerClose.addEventListener('click', stopPlayback);
-document.getElementById('bottomMinimize').addEventListener('click', collapsePlayer);
-document.getElementById('bottomStop').addEventListener('click', stopPlayback);
+document.getElementById('playerMinimize').addEventListener('click', collapsePlayer);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
 tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 
@@ -170,8 +169,9 @@ playerHandle.addEventListener('touchstart', onDragStart, { passive: true });
 document.addEventListener('touchmove', (e) => { if (isDragging) onDragMove(e); }, { passive: false });
 document.addEventListener('touchend', (e) => { if (isDragging) onDragEnd(e); });
 
-const playerMini = document.querySelector('.player-mini');
-playerMini.addEventListener('touchstart', onDragStart, { passive: true });
+// Player top bar is also draggable (for expanded state)
+const playerTop = document.querySelector('.player-top');
+if (playerTop) playerTop.addEventListener('touchstart', onDragStart, { passive: true });
 
 // --- Map controls ---
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
