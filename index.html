@@ -21,7 +21,7 @@
   .topbar { display: none; }
 
   .search-bar {
-    position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 64px; z-index: 1000;
+    position: absolute; top: calc(12px + env(safe-area-inset-top)); left: 12px; right: 60px; z-index: 1000;
     display: flex; align-items: center; gap: 0;
     background: rgba(255,255,255,0.95); border: none;
     border-radius: 28px; overflow: hidden;
@@ -64,7 +64,7 @@
 
   /* --- Category filter --- */
   .filter-btn {
-    position: absolute; top: calc(16px + env(safe-area-inset-top)); right: 68px; z-index: 1000;
+    position: absolute; top: calc(12px + env(safe-area-inset-top)); right: 12px; z-index: 1000;
     width: 44px; height: 44px; border-radius: 22px;
     background: rgba(255,255,255,0.95); border: none;
     box-shadow: 0 2px 12px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04);
@@ -277,9 +277,16 @@
     transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
     display: flex; flex-direction: column;
     max-height: 70vh;
+    border-radius: 16px 16px 0 0;
   }
   .player.active { transform: translateY(0); }
-  /* Sections shown via JS tab switching, not CSS */
+  .player.peek .player-text { display: block; max-height: 80px; overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  }
+  .player.peek .player-progress,
+  .player.peek .player-controls { display: none; }
+  .player.peek .player-tabs { display: none; }
 
   .player-handle {
     width: 36px; height: 4px; background: #d0d0d0; border-radius: 2px;
@@ -372,8 +379,10 @@
     padding: 0 16px calc(12px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(0,0,0,0.06); margin-top: 4px;
     scroll-behavior: smooth;
+    transition: max-height 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   }
   .player.expanded { max-height: 85vh; }
+  .player.expanded .player-text { max-height: 50vh; overflow-y: auto; }
   .pt-section-heading {
     font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.6px;
     font-weight: 700; padding: 16px 0 6px; margin: 0;
@@ -907,36 +916,51 @@ function cycleSpeed() {
   }
 }
 
+function expandPlayer() {
+  playerExpanded = true;
+  playerPeek = false;
+  player.classList.add('expanded');
+  player.classList.remove('peek');
+  switchPlayerTab(activePlayerTab);
+  updateArticleTextHighlight();
+}
+
+function collapsePlayer() {
+  playerExpanded = false;
+  playerPeek = true;
+  player.classList.remove('expanded');
+  player.classList.add('peek');
+  playerText.style.display = activePlayerTab === 'text' ? 'block' : 'none';
+  document.getElementById('playerSections').style.display = activePlayerTab === 'sections' ? 'block' : 'none';
+}
+
 function togglePlayerExpanded() {
-  playerExpanded = !playerExpanded;
-  player.classList.toggle('expanded', playerExpanded);
-  if (playerExpanded) {
-    switchPlayerTab(activePlayerTab);
-    updateArticleTextHighlight();
-  } else {
-    playerText.style.display = 'none';
-    document.getElementById('playerSections').style.display = 'none';
-  }
+  if (playerExpanded) collapsePlayer();
+  else expandPlayer();
 }
 
 function showPlayer() {
   renderSectionsList();
   renderArticleText();
-  player.classList.add('active');
-  // Auto-expand to show article text
-  playerExpanded = true;
-  player.classList.add('expanded');
-  switchPlayerTab('text');
+  player.classList.add('active', 'peek');
+  playerPeek = true;
+  playerExpanded = false;
+  activePlayerTab = 'text';
+  // Show text in peek mode via JS
+  playerText.style.display = 'block';
+  document.getElementById('playerSections').style.display = 'none';
   updatePlayerUI();
 }
 
 function hidePlayer() {
-  player.classList.remove('active', 'expanded');
+  player.classList.remove('active', 'expanded', 'peek');
   playerExpanded = false;
+  playerPeek = false;
   activePlayerTab = 'text';
 }
 
 let activePlayerTab = 'text';
+let playerPeek = false;
 
 function renderArticleText() {
   if (!state.currentArticle) return;
@@ -994,7 +1018,7 @@ function switchPlayerTab(tab) {
   activePlayerTab = tab;
   tabText.classList.toggle('active', tab === 'text');
   tabSections.classList.toggle('active', tab === 'sections');
-  if (!playerExpanded) return;
+  if (!playerExpanded && !playerPeek) return;
   if (tab === 'text') {
     playerText.style.display = 'block';
     document.getElementById('playerSections').style.display = 'none';
@@ -1197,15 +1221,55 @@ playerClose.addEventListener('click', stopPlayback);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
 tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 
-// Swipe gesture on player mini area to expand/collapse
-let playerTouchStartY = 0;
+// Drag gesture on player handle + mini area
+let dragStartY = 0, dragStartH = 0, isDragging = false;
+const dragZone = player;
+const SNAP_PEEK = 0.3;  // fraction of screen for peek
+const SNAP_FULL = 0.75; // fraction of screen for full
+
+function onDragStart(clientY) {
+  isDragging = true;
+  dragStartY = clientY;
+  dragStartH = player.offsetHeight;
+  player.style.transition = 'none';
+}
+
+function onDragMove(clientY) {
+  if (!isDragging) return;
+  const dy = dragStartY - clientY;
+  const newH = Math.max(0, Math.min(window.innerHeight * 0.9, dragStartH + dy));
+  player.style.maxHeight = newH + 'px';
+}
+
+function onDragEnd(clientY) {
+  if (!isDragging) return;
+  isDragging = false;
+  player.style.transition = '';
+  const dy = dragStartY - clientY;
+  const frac = player.offsetHeight / window.innerHeight;
+  player.style.maxHeight = '';
+
+  // Snap to nearest state based on current height and drag direction
+  if (dy > 40 && !playerExpanded) {
+    expandPlayer();
+  } else if (dy < -40 && playerExpanded) {
+    collapsePlayer();
+  } else if (dy < -40 && playerPeek) {
+    // Drag down from peek — just stay in peek (mini player stays)
+    collapsePlayer();
+  }
+  // If small drag, snap back
+}
+
+playerHandle.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });
+playerHandle.addEventListener('touchmove', e => onDragMove(e.touches[0].clientY), { passive: true });
+playerHandle.addEventListener('touchend', e => onDragEnd(e.changedTouches[0].clientY), { passive: true });
+
+// Also allow drag from mini player area
 const playerMini = document.querySelector('.player-mini');
-playerMini.addEventListener('touchstart', e => { playerTouchStartY = e.touches[0].clientY; }, { passive: true });
-playerMini.addEventListener('touchend', e => {
-  const dy = playerTouchStartY - e.changedTouches[0].clientY;
-  if (dy > 30 && !playerExpanded) togglePlayerExpanded();
-  else if (dy < -30 && playerExpanded) togglePlayerExpanded();
-}, { passive: true });
+playerMini.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });
+playerMini.addEventListener('touchmove', e => onDragMove(e.touches[0].clientY), { passive: true });
+playerMini.addEventListener('touchend', e => onDragEnd(e.changedTouches[0].clientY), { passive: true });
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
