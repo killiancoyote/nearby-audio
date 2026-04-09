@@ -1,6 +1,7 @@
 import { chunkText, escHtml, toast, hideToast } from './utils.js';
 import { fetchFullArticle } from './api.js';
 import { state } from './state.js';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -38,6 +39,7 @@ export async function startArticle(article) {
   hideToast();
   state.currentArticle = full;
   state.currentSectionIdx = 0;
+  highlightPlayingMarker(full.title);
   playCurrentSection();
   showPlayer();
 }
@@ -80,6 +82,7 @@ export function stopPlayback() {
   state.isPlaying = false;
   utteranceGen++;
   if (window.speechSynthesis) window.speechSynthesis.cancel();
+  clearPlayingMarker();
   state.currentArticle = null;
   state.currentSectionIdx = 0;
   state.currentChunks = [];

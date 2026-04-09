@@ -10,7 +10,7 @@ import {
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
 } from './player.js';
 import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup } from './map.js';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js';
 import { hideSearchResults } from './search.js';
 
 // --- Expose on window for tests ---
@@ -24,7 +24,7 @@ Object.assign(window, {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet,
-  initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup,
+  initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker,
   hideSearchResults,
 });
 

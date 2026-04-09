@@ -51,6 +51,7 @@ function renderArticleMarkers(articles) {
     const pinSize = len > 300 ? 36 : len > 100 ? 32 : 26;
     const icon = makePinIcon(cat, i * 40, pinSize);
     const marker = L.marker([a.lat, a.lon], { icon }).addTo(state.map);
+    marker._articleData = a;
     marker.on('click', () => openArticlePopup(marker, a));
     state.articleMarkers.push(marker);
   });
@@ -59,37 +60,54 @@ function renderArticleMarkers(articles) {
 
 export function openArticlePopup(marker, article) {
   const isCurrent = state.currentArticle && state.currentArticle.title === article.title;
-  const safeTitle = escHtml(article.title || '');
+  const cleanTitle = (article.title || '').replace(/\s*\([^)]+\)\s*$/, '');
+  const safeTitle = escHtml(cleanTitle);
   const safeExtract = escHtml(article.extract || '');
   const cat = article._category || DEFAULT_CAT;
   const catLabel = cat.id !== 'default' ? cat.id.charAt(0).toUpperCase() + cat.id.slice(1) : '';
-  const metaParts = [formatDistance(article.distance)];
+  const metaParts = [];
   if (catLabel) metaParts.push(catLabel);
+  metaParts.push(formatDistance(article.distance));
   const playIcon = isCurrent && state.isPlaying
     ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
     : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-  const html = `
-    <div class="popup">
-      ${article.thumb ? `<div class="popup-thumb"><img src="${escHtml(article.thumb)}" alt="" onload="this.parentElement.style.background='none'" onerror="this.parentElement.remove()"></div>` : ''}
-      <div class="popup-body">
-        <h3 class="popup-title">${safeTitle}</h3>
-        <p class="popup-meta">${metaParts.join(' \u00b7 ')}</p>
-        <p class="popup-extract">${safeExtract}</p>
-        <div class="popup-actions">
-          <button class="popup-play ${isCurrent && state.isPlaying ? 'playing' : ''}" id="popupPlayBtn">${playIcon}</button>
-          <div class="popup-spacer"></div>
-          <a class="popup-link-icon" href="https://en.wikipedia.org/wiki/${encodeURIComponent(article.title)}" target="_blank" title="Wikipedia">
-            <svg viewBox="0 0 24 24"><path d="M14.97 18.95L12 12.52l-2.97 6.43a.5.5 0 01-.91-.01L4.58 9.68a.5.5 0 01.91-.42L9 17.05l2.54-5.5a.5.5 0 01.91 0L15 17.05l3.51-7.79a.5.5 0 01.91.42l-3.54 9.26a.5.5 0 01-.91.01z"/></svg>
-          </a>
-          <a class="popup-link-icon" href="https://www.google.com/maps/dir/?api=1&destination=${article.lat},${article.lon}" target="_blank" title="Directions">
-            <svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a1 1 0 00-1.42 0l-9 9a1 1 0 000 1.42l9 9a1 1 0 001.42 0l9-9a1 1 0 000-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 011-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg>
-          </a>
+  const wikiBtn = `<a class="popup-icon-btn" href="https://en.wikipedia.org/wiki/${encodeURIComponent(article.title)}" target="_blank" title="Wikipedia"><svg viewBox="0 0 24 24"><path d="M14.97 18.95L12 12.52l-2.97 6.43a.5.5 0 01-.91-.01L4.58 9.68a.5.5 0 01.91-.42L9 17.05l2.54-5.5a.5.5 0 01.91 0L15 17.05l3.51-7.79a.5.5 0 01.91.42l-3.54 9.26a.5.5 0 01-.91.01z"/></svg></a>`;
+  const dirBtn = `<a class="popup-icon-btn" href="https://www.google.com/maps/dir/?api=1&destination=${article.lat},${article.lon}" target="_blank" title="Directions"><svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a1 1 0 00-1.42 0l-9 9a1 1 0 000 1.42l9 9a1 1 0 001.42 0l9-9a1 1 0 000-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 011-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg></a>`;
+  const extractArea = `<div class="popup-extract-area" id="popupExtractArea"><p class="popup-text">${safeExtract}</p></div>`;
+
+  const closeHtml = `<button class="popup-close" aria-label="Close">\u00d7</button>`;
+  const html = article.thumb ? `
+    <div class="popup popup-has-img">
+      ${closeHtml}
+      <div class="popup-top-row">
+        <div class="popup-img-wrap"><img class="popup-img" src="${escHtml(article.thumb)}" alt="" onerror="this.parentElement.remove()"></div>
+        <div class="popup-header-info">
+          <h3 class="popup-title">${safeTitle}</h3>
+          <p class="popup-meta">${metaParts.join(' \u2022 ')}</p>
+          <div class="popup-actions popup-actions-compact">
+            <button class="popup-listen popup-listen-compact ${isCurrent && state.isPlaying ? 'playing' : ''}" id="popupPlayBtn">${playIcon} Listen</button>
+            ${wikiBtn}${dirBtn}
+          </div>
         </div>
       </div>
+      ${extractArea}
+    </div>
+  ` : `
+    <div class="popup popup-no-img">
+      ${closeHtml}
+      <div class="popup-header-info">
+        <h3 class="popup-title">${safeTitle}</h3>
+        <p class="popup-meta">${metaParts.join(' \u2022 ')}</p>
+      </div>
+      <div class="popup-actions popup-actions-full">
+        <button class="popup-listen popup-listen-flex ${isCurrent && state.isPlaying ? 'playing' : ''}" id="popupPlayBtn">${playIcon} Listen</button>
+        ${wikiBtn}${dirBtn}
+      </div>
+      ${extractArea}
     </div>
   `;
   if (marker.getPopup()) marker.unbindPopup();
-  marker.bindPopup(html, { maxWidth: 260, minWidth: 220, closeButton: true }).openPopup();
+  marker.bindPopup(html, { maxWidth: 300, minWidth: 260, closeButton: false, className: 'popup-wrapper' }).openPopup();
   searchAreaBtn.classList.remove('visible');
   setTimeout(() => {
     const px = state.map.latLngToContainerPoint([article.lat, article.lon]);
@@ -109,6 +127,16 @@ export function openArticlePopup(marker, article) {
         if (state.currentArticle && state.currentArticle.title === article.title && state.isPlaying) {
           stopPlayback();
         } else {
+          startArticle(article);
+        }
+      });
+    }
+    const closeBtn = el.querySelector('.popup-close');
+    if (closeBtn) closeBtn.addEventListener('click', () => marker.closePopup());
+    const extractArea = el.querySelector('#popupExtractArea');
+    if (extractArea) {
+      extractArea.addEventListener('click', () => {
+        if (!state.currentArticle || state.currentArticle.title !== article.title) {
           startArticle(article);
         }
       });
@@ -140,6 +168,30 @@ export async function loadNearbyAt(lat, lon, zoom) {
     else toast('No articles found here', '', 3000);
   } catch (e) {
     toast('Error: ' + e.message, 'error', 5000);
+  }
+}
+
+export function highlightPlayingMarker(title) {
+  clearPlayingMarker();
+  for (const m of state.articleMarkers) {
+    if (m._articleData && m._articleData.title === title) {
+      const el = m.getElement();
+      if (el) {
+        const pin = el.querySelector('.cat-pin');
+        if (pin) pin.classList.add('playing');
+      }
+      break;
+    }
+  }
+}
+
+export function clearPlayingMarker() {
+  for (const m of state.articleMarkers) {
+    const el = m.getElement();
+    if (el) {
+      const pin = el.querySelector('.cat-pin');
+      if (pin) pin.classList.remove('playing');
+    }
   }
 }
 
