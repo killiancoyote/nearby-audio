@@ -128,24 +128,52 @@ export function cycleSpeed() {
   }
 }
 
-export function expandPlayer() {
-  playerExpanded = true;
-  playerPeek = false;
-  player.classList.add('expanded');
-  player.classList.remove('peek');
-  switchPlayerTab(activePlayerTab);
-  updateArticleTextHighlight();
+// Snap points: translateY values (0 = fully visible, larger = more hidden)
+// These are computed relative to the player's 85vh height
+function getSnapPoints() {
+  const playerH = player.offsetHeight || window.innerHeight * 0.85;
+  return {
+    hidden: playerH,             // fully offscreen
+    peek: playerH - 160,         // ~160px visible (handle + title + first chunk)
+    expanded: 0,                 // fully visible
+  };
 }
 
-export function collapsePlayer() {
-  playerExpanded = false;
-  playerPeek = true;
-  player.classList.remove('expanded');
-  player.classList.add('peek');
-  playerText.style.display = activePlayerTab === 'text' ? 'block' : 'none';
-  document.getElementById('playerSections').style.display = activePlayerTab === 'sections' ? 'block' : 'none';
+export function snapTo(name, animate = true) {
+  const snaps = getSnapPoints();
+  const y = snaps[name];
+  if (y == null) return;
+  if (animate) {
+    player.classList.remove('dragging');
+    player.classList.add('snapping');
+    const onDone = () => { player.classList.remove('snapping'); player.removeEventListener('transitionend', onDone); };
+    player.addEventListener('transitionend', onDone);
+  }
+  player.style.transform = `translateY(${y}px)`;
+  // Update state classes after transition
+  if (name === 'expanded') {
+    playerExpanded = true;
+    playerPeek = false;
+    player.classList.add('expanded');
+    player.classList.remove('peek');
+    switchPlayerTab(activePlayerTab);
+    updateArticleTextHighlight();
+  } else if (name === 'peek') {
+    playerExpanded = false;
+    playerPeek = true;
+    player.classList.remove('expanded');
+    player.classList.add('peek');
+    playerText.style.display = activePlayerTab === 'text' ? 'block' : 'none';
+    document.getElementById('playerSections').style.display = activePlayerTab === 'sections' ? 'block' : 'none';
+  } else {
+    playerExpanded = false;
+    playerPeek = false;
+    player.classList.remove('expanded', 'peek');
+  }
 }
 
+export function expandPlayer() { snapTo('expanded'); }
+export function collapsePlayer() { snapTo('peek'); }
 export function togglePlayerExpanded() {
   if (playerExpanded) collapsePlayer();
   else expandPlayer();
@@ -154,19 +182,15 @@ export function togglePlayerExpanded() {
 export function showPlayer() {
   renderSectionsList();
   renderArticleText();
-  player.classList.add('active', 'peek');
-  playerPeek = true;
-  playerExpanded = false;
   activePlayerTab = 'text';
   playerText.style.display = 'block';
   document.getElementById('playerSections').style.display = 'none';
+  snapTo('peek');
   updatePlayerUI();
 }
 
 export function hidePlayer() {
-  player.classList.remove('active', 'expanded', 'peek');
-  playerExpanded = false;
-  playerPeek = false;
+  snapTo('hidden');
   activePlayerTab = 'text';
 }
 

@@ -7,7 +7,7 @@ import {
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
-  switchPlayerTab, updatePlayerUI, renderSectionsList,
+  switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
 } from './player.js';
 import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js';
 import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup } from './map.js';
@@ -22,7 +22,7 @@ Object.assign(window, {
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
-  switchPlayerTab, updatePlayerUI, renderSectionsList,
+  switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet,
   initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup,
   hideSearchResults,
@@ -61,73 +61,115 @@ playerClose.addEventListener('click', stopPlayback);
 tabText.addEventListener('click', () => switchPlayerTab('text'));
 tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 
-// --- Drag gesture on player handle + mini area ---
-let dragStartY = 0, dragStartH = 0, isDragging = false;
+// --- Drag gesture (translateY-based bottom sheet) ---
+let dragStartY = 0, dragStartTranslateY = 0, isDragging = false;
+let lastTouchY = 0, lastTouchTime = 0, velocity = 0;
 
-function onDragStart(clientY) {
+function getCurrentTranslateY() {
+  const transform = getComputedStyle(player).transform;
+  if (!transform || transform === 'none') return 0;
+  const m = transform.match(/matrix.*\((.+)\)/);
+  if (!m) return 0;
+  const values = m[1].split(',').map(Number);
+  return values[5] || 0;
+}
+
+function onDragStart(e) {
   isDragging = true;
+  player.classList.add('dragging');
+  player.classList.remove('snapping');
+  // Switch to expanded layout so content is visible during drag
+  player.classList.add('expanded');
+  player.classList.remove('peek');
+
+  const clientY = e.touches[0].clientY;
   dragStartY = clientY;
-  dragStartH = player.offsetHeight;
-  // Lock to current height and enable smooth dragging
-  player.style.transition = 'none';
-  player.style.height = dragStartH + 'px';
-  player.style.maxHeight = 'none';
-  player.style.overflow = 'hidden';
+  dragStartTranslateY = getCurrentTranslateY();
+  lastTouchY = clientY;
+  lastTouchTime = Date.now();
+  velocity = 0;
 }
 
-function onDragMove(clientY) {
+function onDragMove(e) {
   if (!isDragging) return;
-  const dy = dragStartY - clientY;
-  const newH = Math.max(80, Math.min(window.innerHeight * 0.85, dragStartH + dy));
-  player.style.height = newH + 'px';
+  e.preventDefault();
+  const clientY = e.touches[0].clientY;
+  const dy = clientY - dragStartY;
+  const playerH = player.offsetHeight;
+
+  // newY: 0 = fully visible, playerH = fully hidden
+  let newY = dragStartTranslateY + dy;
+  // Clamp: rubber-band above 0, hard stop at playerH
+  if (newY < 0) newY = newY * 0.3;
+  if (newY > playerH) newY = playerH;
+
+  player.style.transform = `translateY(${newY}px)`;
+
+  // Track velocity for momentum
+  const now = Date.now();
+  const dt = now - lastTouchTime;
+  if (dt > 0) {
+    const instantV = (clientY - lastTouchY) / dt;
+    velocity = 0.7 * instantV + 0.3 * velocity;
+  }
+  lastTouchY = clientY;
+  lastTouchTime = now;
 }
 
-function onDragEnd(clientY) {
+function onDragEnd(e) {
   if (!isDragging) return;
   isDragging = false;
-  const dy = dragStartY - clientY;
+  player.classList.remove('dragging');
 
-  // Clean up inline drag styles and animate to target state
-  player.style.transition = 'height 0.3s ease';
+  const currentY = getCurrentTranslateY();
+  const playerH = player.offsetHeight;
+  const peekY = playerH - 160;
 
-  if (dy > 50 && !playerExpanded) {
-    // Dragged up from peek → expand
-    player.style.height = (window.innerHeight * 0.85) + 'px';
-    setTimeout(() => { clearDragStyles(); expandPlayer(); }, 300);
-  } else if (dy < -50 && playerExpanded) {
-    // Dragged down from expanded → collapse to peek
-    player.style.height = '';
-    setTimeout(() => { clearDragStyles(); collapsePlayer(); }, 300);
-  } else if (dy < -50 && playerPeek && !playerExpanded) {
-    // Dragged down from peek → stay in peek
-    player.style.height = '';
-    setTimeout(() => { clearDragStyles(); collapsePlayer(); }, 300);
+  // Project position forward based on momentum
+  const projected = currentY + velocity * 200;
+
+  // Find nearest snap: expanded (0), peek (peekY), hidden (playerH)
+  const snaps = [
+    { name: 'expanded', y: 0 },
+    { name: 'peek', y: peekY },
+    { name: 'hidden', y: playerH },
+  ];
+
+  // Velocity-based override: fast flick always goes to next snap
+  const FLICK_THRESHOLD = 0.5;
+  let target;
+
+  if (velocity > FLICK_THRESHOLD) {
+    // Flicking down
+    if (playerExpanded) target = 'peek';
+    else target = 'hidden';
+  } else if (velocity < -FLICK_THRESHOLD) {
+    // Flicking up
+    if (playerPeek || !playerExpanded) target = 'expanded';
+    else target = 'expanded';
   } else {
-    // Small drag → snap back to current state
-    if (playerExpanded) {
-      player.style.height = (window.innerHeight * 0.85) + 'px';
-    } else {
-      player.style.height = '';
+    // No strong flick — snap to nearest based on projected position
+    let closest = snaps[0];
+    for (const s of snaps) {
+      if (Math.abs(projected - s.y) < Math.abs(projected - closest.y)) closest = s;
     }
-    setTimeout(() => { clearDragStyles(); }, 300);
+    target = closest.name;
+  }
+
+  if (target === 'hidden') {
+    stopPlayback();
+  } else {
+    snapTo(target, true);
   }
 }
 
-function clearDragStyles() {
-  player.style.transition = '';
-  player.style.height = '';
-  player.style.maxHeight = '';
-  player.style.overflow = '';
-}
-
-playerHandle.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });
-playerHandle.addEventListener('touchmove', e => onDragMove(e.touches[0].clientY), { passive: true });
-playerHandle.addEventListener('touchend', e => onDragEnd(e.changedTouches[0].clientY), { passive: true });
+// Use touchstart with passive:false so we can preventDefault on touchmove
+playerHandle.addEventListener('touchstart', onDragStart, { passive: true });
+document.addEventListener('touchmove', (e) => { if (isDragging) onDragMove(e); }, { passive: false });
+document.addEventListener('touchend', (e) => { if (isDragging) onDragEnd(e); });
 
 const playerMini = document.querySelector('.player-mini');
-playerMini.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });
-playerMini.addEventListener('touchmove', e => onDragMove(e.touches[0].clientY), { passive: true });
-playerMini.addEventListener('touchend', e => onDragEnd(e.changedTouches[0].clientY), { passive: true });
+playerMini.addEventListener('touchstart', onDragStart, { passive: true });
 
 // --- Map controls ---
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());

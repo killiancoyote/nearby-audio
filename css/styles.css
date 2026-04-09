@@ -124,7 +124,8 @@ html, body {
   display: flex; flex-direction: column; gap: 0;
   transition: bottom 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-body:has(.player.active) .floating-controls {
+body:has(.player.peek) .floating-controls,
+body:has(.player.expanded) .floating-controls {
   bottom: calc(160px + env(safe-area-inset-bottom));
 }
 .fc-btn {
@@ -269,12 +270,15 @@ body:has(.player.active) .floating-controls {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 2000;
   background: rgba(255,255,255,0.98); border-top: 1px solid rgba(0,0,0,0.06);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  transform: translateY(100%); transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1);
   display: flex; flex-direction: column;
-  max-height: 70vh;
+  height: 85vh;
   border-radius: 16px 16px 0 0;
+  transform: translateY(100%);
+  will-change: transform;
+  touch-action: none;
 }
-.player.active { transform: translateY(0); }
+.player.snapping { transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); }
+.player.dragging { transition: none !important; }
 .player.peek .player-text { display: block; max-height: 80px; overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
@@ -376,7 +380,6 @@ body:has(.player.active) .floating-controls {
   scroll-behavior: smooth;
   transition: max-height 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-.player.expanded { max-height: 85vh; }
 .player.expanded .player-text { max-height: 50vh; overflow-y: auto; }
 .pt-section-heading {
   font-size: 13px; color: #1a1a1a; letter-spacing: -0.1px;
