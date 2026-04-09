@@ -23,6 +23,31 @@ export let playerExpanded = false;
 export let playerPeek = false;
 let activePlayerTab = 'text';
 let utteranceGen = 0; // generation counter to ignore stale onend/onerror callbacks
+let cachedVoice = null; // best voice, resolved once voices load
+
+// Pick the best English voice: Premium/Enhanced > named favorites > any en-US
+function pickBestVoice(voices) {
+  const en = voices.filter(v => /^en/i.test(v.lang));
+  // Premium / Enhanced (user-downloaded high-quality voices on iOS)
+  const premium = en.find(v => /premium|enhanced/i.test(v.name));
+  if (premium) return premium;
+  // Named system voices known to sound decent
+  const named = en.find(v => /samantha|alex|karen|daniel|zoe|ava|tom/i.test(v.name));
+  if (named) return named;
+  // Any English voice
+  return en[0] || null;
+}
+
+// Safari doesn't have voices ready immediately — listen for the async load
+function initVoices() {
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length) {
+    cachedVoice = pickBestVoice(voices);
+    if (cachedVoice) console.log('TTS voice:', cachedVoice.name);
+  }
+}
+initVoices();
+window.speechSynthesis.onvoiceschanged = initVoices;
 
 export async function startArticle(article) {
   stopPlayback();
@@ -75,10 +100,7 @@ export function speakNextChunk() {
   const chunk = state.currentChunks[state.currentChunkIdx];
   const utter = new SpeechSynthesisUtterance(chunk);
   utter.rate = SPEEDS[speedIdx]; utter.pitch = 1.0; utter.lang = 'en-US';
-  const voices = window.speechSynthesis.getVoices();
-  const preferred = voices.find(v => /en[-_]US/i.test(v.lang) && /samantha|alex|karen|daniel/i.test(v.name))
-                 || voices.find(v => /en[-_]US/i.test(v.lang));
-  if (preferred) utter.voice = preferred;
+  if (cachedVoice) utter.voice = cachedVoice;
   const gen = utteranceGen;
   utter.onend = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; updateArticleTextHighlight(); speakNextChunk(); } };
   utter.onerror = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
