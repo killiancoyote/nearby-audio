@@ -76,6 +76,10 @@ appFrame.addEventListener('load', async () => {
   assert('openArticlePopup', typeof app.openArticlePopup === 'function');
   assert('classifyArticle', typeof app.classifyArticle === 'function');
   assert('makePinIcon', typeof app.makePinIcon === 'function');
+  assert('buildFilterBar', typeof app.buildFilterBar === 'function');
+  assert('applyFilters', typeof app.applyFilters === 'function');
+  assert('renderArticleText', typeof app.renderArticleText === 'function');
+  assert('switchPlayerTab', typeof app.switchPlayerTab === 'function');
 
   section('Player functions exist');
   assert('updatePlayerUI', typeof app.updatePlayerUI === 'function');
@@ -119,6 +123,11 @@ appFrame.addEventListener('load', async () => {
   assert('#searchAreaBtn exists', !!doc.getElementById('searchAreaBtn'));
   assert('#zoomInBtn exists', !!doc.getElementById('zoomInBtn'));
   assert('#zoomOutBtn exists', !!doc.getElementById('zoomOutBtn'));
+  assert('#filterBar exists', !!doc.getElementById('filterBar'));
+  assert('#playerText exists', !!doc.getElementById('playerText'));
+  assert('#tabText exists', !!doc.getElementById('tabText'));
+  assert('#tabSections exists', !!doc.getElementById('tabSections'));
+  assert('filter chips rendered', doc.querySelectorAll('.filter-chip').length > 0);
 
   // ===== chunkText =====
   section('chunkText');

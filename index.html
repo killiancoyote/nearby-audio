@@ -45,7 +45,7 @@
   }
   .search-bar .search-clear:active { color: #555; }
   .search-results {
-    position: absolute; top: 60px; left: 12px; right: 12px; z-index: 1001;
+    position: absolute; top: calc(60px + env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 1001;
     background: rgba(255,255,255,0.98); border: none;
     border-radius: 16px; overflow: hidden; display: none;
     box-shadow: 0 4px 20px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04);
@@ -62,8 +62,35 @@
   .sr-item .sr-name { font-weight: 600; color: #1a1a1a; }
   .sr-item .sr-detail { font-size: 12px; color: #999; margin-top: 2px; }
 
+  /* --- Category filter chips --- */
+  .filter-bar {
+    position: absolute; top: calc(64px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 999;
+    display: flex; gap: 6px; padding: 0 12px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; -ms-overflow-style: none;
+    opacity: 0; pointer-events: none; transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .filter-bar.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-chip {
+    flex-shrink: 0; display: flex; align-items: center; gap: 5px;
+    padding: 6px 12px; border-radius: 16px;
+    background: rgba(255,255,255,0.92); border: 1.5px solid rgba(0,0,0,0.08);
+    font-size: 12px; font-weight: 600; color: #666;
+    cursor: pointer; white-space: nowrap;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: opacity 0.15s ease, border-color 0.15s ease;
+  }
+  .filter-chip .fc-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .filter-chip.off { opacity: 0.45; }
+  .filter-chip.off .fc-dot { background: #ccc !important; }
+  .filter-chip:active { opacity: 0.7; }
+
   .search-area-btn {
-    position: absolute; top: 68px; left: 50%; z-index: 1000;
+    position: absolute; top: calc(100px + env(safe-area-inset-top)); left: 50%; z-index: 1000;
     background: white; border: none;
     border-radius: 20px; padding: 10px 20px; font-size: 14px; font-weight: 600;
     color: #1a1a1a; cursor: pointer;
@@ -113,7 +140,7 @@
   .fc-single .fc-btn { border-radius: 10px; border-bottom: none; box-shadow: none; }
 
   .toast {
-    position: absolute; top: 68px; left: 50%; z-index: 1001;
+    position: absolute; top: calc(100px + env(safe-area-inset-top)); left: 50%; z-index: 1001;
     background: rgba(255,255,255,0.95); border: none;
     border-radius: 20px; padding: 10px 20px; font-size: 14px; color: #444; font-weight: 500;
     box-shadow: 0 2px 12px rgba(0,0,0,0.1);
@@ -228,7 +255,7 @@
     max-height: 70vh;
   }
   .player.active { transform: translateY(0); }
-  .player.expanded .player-sections { display: block; }
+  /* Sections shown via JS tab switching, not CSS */
 
   .player-handle {
     width: 36px; height: 4px; background: #d0d0d0; border-radius: 2px;
@@ -311,6 +338,47 @@
   .ps-name { font-size: 14px; color: #666; flex: 1; }
   .ps-item.active .ps-name { color: #1a1a1a; font-weight: 600; }
   .ps-item.done .ps-name { color: #bbb; }
+
+  /* --- Article text reader (lyrics-style) --- */
+  .player-text {
+    display: none; overflow-y: auto; max-height: 50vh;
+    padding: 0 16px calc(12px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(0,0,0,0.06); margin-top: 4px;
+    scroll-behavior: smooth;
+  }
+  .player.expanded { max-height: 85vh; }
+  .pt-section-heading {
+    font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.6px;
+    font-weight: 700; padding: 16px 0 6px; margin: 0;
+  }
+  .pt-section-heading:first-child { padding-top: 12px; }
+  .pt-chunk {
+    font-size: 15px; line-height: 1.65; color: #bbb;
+    padding: 4px 0; margin: 0;
+    transition: color 0.3s ease;
+    cursor: pointer; border-radius: 4px;
+  }
+  .pt-chunk.active {
+    color: #1a1a1a; font-weight: 500;
+  }
+  .pt-chunk.done {
+    color: #999;
+  }
+  .pt-chunk:active { opacity: 0.6; }
+
+  /* Tab switcher in expanded player */
+  .player-tabs {
+    display: none; padding: 4px 16px 0; gap: 0;
+  }
+  .player.expanded .player-tabs { display: flex; }
+  .player-tab {
+    flex: 1; padding: 8px; border: none; background: none;
+    font-size: 12px; font-weight: 600; color: #999; cursor: pointer;
+    border-bottom: 2px solid transparent; text-align: center;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .player-tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+  .player-tab:active { opacity: 0.5; }
 </style>
 </head>
 <body>
@@ -327,6 +395,7 @@
     <button class="search-clear" id="searchClear">&times;</button>
   </div>
   <div class="search-results" id="searchResults"></div>
+  <div class="filter-bar" id="filterBar"></div>
   <button class="search-area-btn" id="searchAreaBtn">Search this area</button>
 
   <div class="floating-controls">
@@ -374,6 +443,11 @@
       </button>
       <button class="pc-btn pc-speed" id="sleepBtn" title="Sections left" style="font-size:11px; color:#666;">--</button>
     </div>
+    <div class="player-tabs">
+      <button class="player-tab active" id="tabText" data-tab="text">Article</button>
+      <button class="player-tab" id="tabSections" data-tab="sections">Sections</button>
+    </div>
+    <div class="player-text" id="playerText"></div>
     <div class="player-sections" id="playerSections">
       <div class="player-sections-title">Sections</div>
       <div id="sectionsList"></div>
@@ -415,6 +489,10 @@ const searchInput = document.getElementById('searchInput');
 const searchClear = document.getElementById('searchClear');
 const searchResults = document.getElementById('searchResults');
 const searchAreaBtn = document.getElementById('searchAreaBtn');
+const filterBar = document.getElementById('filterBar');
+const playerText = document.getElementById('playerText');
+const tabText = document.getElementById('tabText');
+const tabSections = document.getElementById('tabSections');
 
 // --- Article category system ---
 const CATEGORIES = [
@@ -456,6 +534,44 @@ function makePinIcon(cat, delay) {
     className: '',
     html: `<div class="cat-pin" style="background:${cat.color};animation-delay:${delay}ms"><svg viewBox="0 0 24 24">${cat.icon}</svg></div>`,
     iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+  });
+}
+
+// --- Filter state ---
+const activeFilters = new Set([...CATEGORIES.map(c => c.id), 'default']);
+let allFetchedArticles = [];
+
+function buildFilterBar() {
+  const allCats = [...CATEGORIES, DEFAULT_CAT];
+  filterBar.innerHTML = allCats.map(c => {
+    const label = c.id === 'default' ? 'Other' : c.id.charAt(0).toUpperCase() + c.id.slice(1);
+    return `<button class="filter-chip${activeFilters.has(c.id) ? '' : ' off'}" data-cat="${c.id}">
+      <span class="fc-dot" style="background:${c.color}"></span>${label}
+    </button>`;
+  }).join('');
+  filterBar.querySelectorAll('.filter-chip').forEach(el => {
+    el.addEventListener('click', () => {
+      const cat = el.dataset.cat;
+      if (activeFilters.has(cat)) activeFilters.delete(cat);
+      else activeFilters.add(cat);
+      el.classList.toggle('off', !activeFilters.has(cat));
+      applyFilters();
+    });
+  });
+}
+
+function applyFilters() {
+  state.articleMarkers.forEach((m, i) => {
+    const a = allFetchedArticles[i];
+    if (!a) return;
+    const cat = a._category || DEFAULT_CAT;
+    if (activeFilters.has(cat.id)) {
+      m.getElement && m.getElement() ? m.getElement().style.display = '' : null;
+      m.setOpacity(1);
+    } else {
+      m.setOpacity(0);
+      m.getElement && m.getElement() ? m.getElement().style.display = 'none' : null;
+    }
   });
 }
 
@@ -548,10 +664,13 @@ function clearArticleMarkers() {
 
 function renderArticleMarkers(articles) {
   clearArticleMarkers();
+  allFetchedArticles = articles;
   if (articles.length === 0) {
     emptyState.classList.add('visible');
+    filterBar.classList.remove('visible');
   } else {
     emptyState.classList.remove('visible');
+    filterBar.classList.add('visible');
   }
   articles.forEach((a, i) => {
     const cat = classifyArticle(a.description);
@@ -561,6 +680,7 @@ function renderArticleMarkers(articles) {
     marker.on('click', () => openArticlePopup(marker, a));
     state.articleMarkers.push(marker);
   });
+  applyFilters();
 }
 
 function escHtml(s) {
@@ -733,10 +853,18 @@ function cycleSpeed() {
 function togglePlayerExpanded() {
   playerExpanded = !playerExpanded;
   player.classList.toggle('expanded', playerExpanded);
+  if (playerExpanded) {
+    switchPlayerTab(activePlayerTab);
+    updateArticleTextHighlight();
+  } else {
+    playerText.style.display = 'none';
+    document.getElementById('playerSections').style.display = 'none';
+  }
 }
 
 function showPlayer() {
   renderSectionsList();
+  renderArticleText();
   player.classList.add('active');
   updatePlayerUI();
 }
@@ -744,6 +872,75 @@ function showPlayer() {
 function hidePlayer() {
   player.classList.remove('active', 'expanded');
   playerExpanded = false;
+  activePlayerTab = 'text';
+}
+
+let activePlayerTab = 'text';
+
+function renderArticleText() {
+  if (!state.currentArticle) return;
+  let html = '';
+  state.currentArticle.sections.forEach((sec, si) => {
+    html += `<p class="pt-section-heading" data-si="${si}">${escHtml(sec.heading)}</p>`;
+    const chunks = chunkText(sec.text);
+    chunks.forEach((chunk, ci) => {
+      html += `<p class="pt-chunk" data-si="${si}" data-ci="${ci}">${escHtml(chunk)}</p>`;
+    });
+  });
+  playerText.innerHTML = html;
+  playerText.querySelectorAll('.pt-chunk').forEach(el => {
+    el.addEventListener('click', () => {
+      const si = parseInt(el.dataset.si);
+      const ci = parseInt(el.dataset.ci);
+      window.speechSynthesis.cancel();
+      state.currentSectionIdx = si;
+      const sec = state.currentArticle.sections[si];
+      state.currentChunks = chunkText(sec.text);
+      state.currentChunkIdx = ci;
+      state.isPlaying = true;
+      updatePlayerUI();
+      speakNextChunk();
+      refreshActivePopupButton();
+    });
+  });
+}
+
+function updateArticleTextHighlight() {
+  playerText.querySelectorAll('.pt-chunk').forEach(el => {
+    const si = parseInt(el.dataset.si);
+    const ci = parseInt(el.dataset.ci);
+    el.classList.remove('active', 'done');
+    if (si < state.currentSectionIdx) {
+      el.classList.add('done');
+    } else if (si === state.currentSectionIdx) {
+      if (ci < state.currentChunkIdx) el.classList.add('done');
+      else if (ci === state.currentChunkIdx) el.classList.add('active');
+    }
+  });
+  // Also highlight section headings
+  playerText.querySelectorAll('.pt-section-heading').forEach(el => {
+    const si = parseInt(el.dataset.si);
+    el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
+  });
+  // Auto-scroll to active chunk
+  const activeChunk = playerText.querySelector('.pt-chunk.active');
+  if (activeChunk && playerExpanded) {
+    activeChunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function switchPlayerTab(tab) {
+  activePlayerTab = tab;
+  tabText.classList.toggle('active', tab === 'text');
+  tabSections.classList.toggle('active', tab === 'sections');
+  if (!playerExpanded) return;
+  if (tab === 'text') {
+    playerText.style.display = 'block';
+    document.getElementById('playerSections').style.display = 'none';
+  } else {
+    playerText.style.display = 'none';
+    document.getElementById('playerSections').style.display = 'block';
+  }
 }
 
 function updatePlayerUI() {
@@ -764,6 +961,7 @@ function updatePlayerUI() {
     : '<path d="M8 5v14l11-7z"/>';
   // Sections list active state
   updateSectionsList();
+  updateArticleTextHighlight();
 }
 
 function renderSectionsList() {
@@ -814,11 +1012,11 @@ function getLocation() {
   });
 }
 
-async function loadNearbyAt(lat, lon) {
+async function loadNearbyAt(lat, lon, zoom) {
   emptyState.classList.remove('visible');
   toast('Finding nearby articles…');
   setUserLocation(lat, lon);
-  state.map.setView([lat, lon], 16);
+  state.map.setView([lat, lon], zoom != null ? zoom : 16);
   try {
     const articles = await fetchNearby(lat, lon);
     renderArticleMarkers(articles);
@@ -924,7 +1122,7 @@ loadNearbyAt = async function(lat, lon) {
 
 searchAreaBtn.addEventListener('click', () => {
   const center = state.map.getCenter();
-  loadNearbyAt(center.lat, center.lng);
+  loadNearbyAt(center.lat, center.lng, state.map.getZoom());
 });
 
 // --- Player controls ---
@@ -934,11 +1132,14 @@ prevSectionBtn.addEventListener('click', () => skipSection(-1));
 speedBtn.addEventListener('click', cycleSpeed);
 playerHandle.addEventListener('click', togglePlayerExpanded);
 playerClose.addEventListener('click', stopPlayback);
+tabText.addEventListener('click', () => switchPlayerTab('text'));
+tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
 // refreshBtn removed — "Search this area" handles this
 
+buildFilterBar();
 initMap(40.7308, -73.9544);
 state.map.on('moveend', onMapMoveEnd);
 initWithMyLocation();
