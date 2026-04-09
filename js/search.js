@@ -1,5 +1,4 @@
 import { escHtml } from './utils.js';
-import { loadNearbyAt } from './map.js';
 
 const searchInput = document.getElementById('searchInput');
 const searchClear = document.getElementById('searchClear');
@@ -34,7 +33,8 @@ function showSearchResults(results) {
       const lat = parseFloat(r.lat), lon = parseFloat(r.lon);
       searchInput.value = r.display_name.split(',')[0];
       hideSearchResults();
-      loadNearbyAt(lat, lon);
+      // Use the wrapped version from app.js (sets lastLoadedCenter/Zoom)
+      (window.loadNearbyAt || (() => {}))(lat, lon);
     });
   });
 }

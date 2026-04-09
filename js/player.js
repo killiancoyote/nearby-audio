@@ -249,8 +249,10 @@ export function updateArticleTextHighlight() {
     const si = parseInt(el.dataset.si);
     el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
   });
+  // Always scroll active chunk into view (even if text tab is hidden)
+  // so it's in the right position when user switches back to Article tab
   const activeChunk = playerText.querySelector('.pt-chunk.active');
-  if (activeChunk && playerExpanded) {
+  if (activeChunk) {
     activeChunk.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 }
