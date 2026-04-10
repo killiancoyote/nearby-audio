@@ -32,6 +32,9 @@ let useHDVoice = false;
 let hdAudioCache = new Map(); // "si-ci" → Blob URL for instant replay
 let prefetchedAudio = null;   // { key, url } — next chunk's audio, fetched ahead
 let currentHDAudio = null;    // currently playing Audio element
+// Persistent Audio element — reusing one element avoids iOS Safari autoplay blocks
+// (initial user tap "unlocks" it, subsequent .play() calls succeed)
+const hdAudioEl = new Audio();
 
 export function toggleHDVoice() {
   useHDVoice = !useHDVoice;
@@ -44,7 +47,7 @@ export function toggleHDVoice() {
   if (state.isPlaying) {
     utteranceGen++;
     window.speechSynthesis.cancel();
-    if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+    hdAudioEl.pause(); currentHDAudio = null;
     speakNextChunk();
   }
 }
@@ -152,8 +155,11 @@ export function speakNextChunk() {
   if (!state.isPlaying) return;
   if (state.currentChunkIdx >= state.currentChunks.length) {
     state.currentSectionIdx++;
-    if (state.currentSectionIdx < state.currentArticle.sections.length) playCurrentSection();
-    else stopPlayback();
+    if (state.currentSectionIdx < state.currentArticle.sections.length) {
+      playCurrentSection();
+    } else {
+      stopPlayback();
+    }
     return;
   }
 
@@ -193,14 +199,17 @@ async function speakChunkHD(chunk, gen) {
 
     if (gen !== utteranceGen) return; // stale — user skipped or stopped
 
-    const audio = new Audio(url);
-    audio.playbackRate = SPEEDS[speedIdx];
-    currentHDAudio = audio;
+    // Reuse persistent Audio element to avoid iOS autoplay blocks
+    // (initial user tap "unlocks" it; subsequent .src swaps + .play() work)
+    hdAudioEl.pause();
+    hdAudioEl.src = url;
+    hdAudioEl.playbackRate = SPEEDS[speedIdx];
+    currentHDAudio = hdAudioEl;
 
     // Start prefetching the next chunk while this one plays
     prefetchNextChunk();
 
-    audio.onended = () => {
+    hdAudioEl.onended = () => {
       currentHDAudio = null;
       if (gen === utteranceGen && state.isPlaying) {
         state.currentChunkIdx++;
@@ -208,13 +217,13 @@ async function speakChunkHD(chunk, gen) {
         speakNextChunk();
       }
     };
-    audio.onerror = () => {
+    hdAudioEl.onerror = () => {
       currentHDAudio = null;
       // Fallback to local voice on error
       if (gen === utteranceGen && state.isPlaying) speakChunkLocal(chunk, gen);
     };
     try {
-      await audio.play();
+      await hdAudioEl.play();
     } catch (playErr) {
       console.warn('HD audio play failed:', playErr.message);
       currentHDAudio = null;
@@ -232,7 +241,7 @@ export function stopPlayback() {
   state.isPlaying = false;
   utteranceGen++;
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  hdAudioEl.pause(); hdAudioEl.src = ''; currentHDAudio = null;
   hdAudioCache.clear();
   prefetchedAudio = null;
   clearPlayingMarker();
@@ -247,11 +256,11 @@ export function stopPlayback() {
 export function togglePause() {
   if (!state.currentArticle) return;
   if (state.isPlaying) {
-    if (currentHDAudio) currentHDAudio.pause();
+    if (currentHDAudio) hdAudioEl.pause();
     else window.speechSynthesis.pause();
     state.isPlaying = false;
   } else {
-    if (currentHDAudio) currentHDAudio.play();
+    if (currentHDAudio) hdAudioEl.play();
     else window.speechSynthesis.resume();
     state.isPlaying = true;
   }
@@ -262,7 +271,7 @@ export function skipSection(dir) {
   if (!state.currentArticle) return;
   utteranceGen++;
   window.speechSynthesis.cancel();
-  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  hdAudioEl.pause(); currentHDAudio = null;
   prefetchedAudio = null;
   state.currentSectionIdx += dir;
   if (state.currentSectionIdx < 0) state.currentSectionIdx = 0;
@@ -274,7 +283,7 @@ export function jumpToSection(idx) {
   if (!state.currentArticle) return;
   utteranceGen++;
   window.speechSynthesis.cancel();
-  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  hdAudioEl.pause(); currentHDAudio = null;
   prefetchedAudio = null;
   state.currentSectionIdx = idx;
   playCurrentSection();
@@ -286,7 +295,7 @@ export function cycleSpeed() {
   if (state.isPlaying) {
     if (currentHDAudio) {
       // HD voice: just change playback rate, no restart needed
-      currentHDAudio.playbackRate = SPEEDS[speedIdx];
+      hdAudioEl.playbackRate = SPEEDS[speedIdx];
     } else {
       utteranceGen++;
       window.speechSynthesis.cancel();
@@ -378,7 +387,7 @@ export function renderArticleText() {
       const ci = parseInt(el.dataset.ci);
       utteranceGen++;
       window.speechSynthesis.cancel();
-      if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+      hdAudioEl.pause(); currentHDAudio = null;
       prefetchedAudio = null;
       state.currentSectionIdx = si;
       const sec = state.currentArticle.sections[si];

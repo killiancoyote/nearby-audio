@@ -24,16 +24,36 @@ function renderFilterSheet() {
     return `<div class="filter-row ${on ? 'on' : 'off'}" data-cat="${c.id}">
       <span class="fr-dot" style="background:${c.color}"></span>
       <span class="fr-label">${label}</span>
+      <button class="fr-only">only</button>
       <span class="fr-check"></span>
     </div>`;
   }).join('');
   filterSheet.querySelectorAll('.filter-row').forEach(el => {
-    el.addEventListener('click', () => {
+    // Checkbox toggle (click anywhere except "only" button)
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('fr-only')) return;
       const cat = el.dataset.cat;
       if (activeFilters.has(cat)) activeFilters.delete(cat);
       else activeFilters.add(cat);
       el.classList.toggle('on', activeFilters.has(cat));
       el.classList.toggle('off', !activeFilters.has(cat));
+      applyFilters();
+      updateFilterBtnState();
+    });
+  });
+  // "Only" buttons — select just this one category
+  filterSheet.querySelectorAll('.fr-only').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const cat = btn.closest('.filter-row').dataset.cat;
+      activeFilters.clear();
+      activeFilters.add(cat);
+      // Update all rows
+      filterSheet.querySelectorAll('.filter-row').forEach(row => {
+        const on = activeFilters.has(row.dataset.cat);
+        row.classList.toggle('on', on);
+        row.classList.toggle('off', !on);
+      });
       applyFilters();
       updateFilterBtnState();
     });
