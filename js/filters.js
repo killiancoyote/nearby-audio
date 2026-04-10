@@ -1,5 +1,5 @@
-import { CATEGORIES, DEFAULT_CAT } from './categories.js?v=11';
-import { state } from './state.js?v=11';
+import { CATEGORIES, DEFAULT_CAT } from './categories.js?v=12';
+import { state } from './state.js?v=12';
 
 const filterBtn = document.getElementById('filterBtn');
 const filterSheet = document.getElementById('filterSheet');

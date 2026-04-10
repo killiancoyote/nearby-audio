@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=11';
-import { fetchFullArticle } from './api.js?v=11';
-import { state } from './state.js?v=11';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=11';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=12';
+import { fetchFullArticle } from './api.js?v=12';
+import { state } from './state.js?v=12';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=12';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -412,6 +412,8 @@ export function showPlayer() {
     playerThumbImg.classList.remove('visible');
   }
   playerText.style.display = 'block';
+  // Hide "Search this area" while player is open
+  document.getElementById('searchAreaBtn')?.classList.remove('visible');
   snapTo('open');
   updatePlayerUI();
 }

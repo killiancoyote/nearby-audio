@@ -1,7 +1,7 @@
-import { state } from './state.js?v=11';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=11';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=11';
-import { fetchNearby, fetchFullArticle } from './api.js?v=11';
+import { state } from './state.js?v=12';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=12';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=12';
+import { fetchNearby, fetchFullArticle } from './api.js?v=12';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,10 +9,10 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=11';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=11';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=11';
-import { hideSearchResults } from './search.js?v=11';
+} from './player.js?v=12';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=12';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=12';
+import { hideSearchResults } from './search.js?v=12';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -31,7 +31,7 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded } from './player.js?v=11';
+import { speedIdx, playerExpanded } from './player.js?v=12';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
 
@@ -155,24 +155,23 @@ playerHandle.addEventListener('touchstart', onDragStart, { passive: true });
 document.addEventListener('touchmove', (e) => { if (isDragging) onDragMove(e); }, { passive: false });
 document.addEventListener('touchend', (e) => { if (isDragging) onDragEnd(e); });
 
-// Player top bar is also draggable
-const playerTop = document.querySelector('.player-top');
-if (playerTop) playerTop.addEventListener('touchstart', onDragStart, { passive: true });
+// Only the drag handle controls the tray — player-top and article text scroll normally
 
-// Scroll-to-dismiss: when article text is scrolled to top and user keeps pulling down, drag the tray
+// Scroll-to-dismiss: when article text is at scroll-top and user overscrolls down, close tray
 const playerTextEl = document.getElementById('playerText');
-let scrollDragPending = false;
+let scrollDismissStartY = null;
 playerTextEl.addEventListener('touchstart', (e) => {
-  scrollDragPending = playerTextEl.scrollTop <= 0;
+  scrollDismissStartY = playerTextEl.scrollTop <= 0 ? e.touches[0].clientY : null;
 }, { passive: true });
 playerTextEl.addEventListener('touchmove', (e) => {
-  if (!scrollDragPending || isDragging) return;
-  if (playerTextEl.scrollTop <= 0) {
-    // User is at top and pulling down — hijack into tray drag
-    scrollDragPending = false;
-    onDragStart(e);
-  } else {
-    scrollDragPending = false;
+  if (scrollDismissStartY === null || isDragging) return;
+  if (playerTextEl.scrollTop > 0) { scrollDismissStartY = null; return; }
+  const dy = e.touches[0].clientY - scrollDismissStartY;
+  if (dy > 80) {
+    // User pulled down 80px while at top — dismiss tray
+    scrollDismissStartY = null;
+    stopPlayback();
+    unsuppressSearchBtn();
   }
 }, { passive: true });
 
@@ -200,7 +199,8 @@ function shouldShowSearchBtn() {
 }
 
 function updateSearchBtnVisibility() {
-  if (searchBtnSuppressed) {
+  // Always hide when player is open or suppressed
+  if (searchBtnSuppressed || player.classList.contains('open') || player.classList.contains('expanded')) {
     searchAreaBtn.classList.remove('visible');
     return;
   }
