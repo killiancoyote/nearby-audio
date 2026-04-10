@@ -386,6 +386,14 @@ body:has(.player.expanded) .floating-controls {
 .player.peek .player-top-btn:first-child { display: none; }
 .player.peek .player-title { font-size: 15px; }
 
+/* --- Thumbnail in top bar --- */
+.player-top-thumb {
+  display: none; width: 44px; height: 44px; min-width: 44px; border-radius: 8px;
+  object-fit: cover; flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+.player-top-thumb.visible { display: block; }
+
 /* --- Tab switcher --- */
 .player-tabs {
   display: none; padding: 0 16px; gap: 0; flex-shrink: 0;

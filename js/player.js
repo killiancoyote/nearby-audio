@@ -16,6 +16,7 @@ const sectionsList = document.getElementById('sectionsList');
 const playerText = document.getElementById('playerText');
 const tabText = document.getElementById('tabText');
 const tabSections = document.getElementById('tabSections');
+const playerThumbImg = document.getElementById('playerThumbImg');
 
 export const SPEEDS = [0.8, 1, 1.15, 1.3, 1.5];
 export let speedIdx = 1;
@@ -358,6 +359,15 @@ export function togglePlayerExpanded() {
 export function showPlayer() {
   renderSectionsList();
   renderArticleText();
+  // Show thumbnail if article has one
+  const thumb = state.currentArticle?.thumb;
+  if (thumb) {
+    playerThumbImg.src = thumb;
+    playerThumbImg.classList.add('visible');
+  } else {
+    playerThumbImg.src = '';
+    playerThumbImg.classList.remove('visible');
+  }
   activePlayerTab = 'text';
   playerText.style.display = 'block';
   document.getElementById('playerSections').style.display = 'none';
@@ -368,6 +378,7 @@ export function showPlayer() {
 export function hidePlayer() {
   snapTo('hidden');
   activePlayerTab = 'text';
+  playerThumbImg.classList.remove('visible');
 }
 
 export function renderArticleText() {

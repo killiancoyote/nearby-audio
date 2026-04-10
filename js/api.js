@@ -142,7 +142,7 @@ async function batchFetchSummaries(pages, userLat, userLon) {
     const ids = batch.map(p => p.pageid).join('|');
     const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*` +
       `&pageids=${ids}&prop=extracts|pageimages|description` +
-      `&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=200&redirects=1`;
+      `&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=600&redirects=1`;
     const res = await fetch(url);
     if (!res.ok) continue;
     const data = await res.json();
