@@ -457,9 +457,9 @@ export function updateArticleTextHighlight() {
     const si = parseInt(el.dataset.si);
     el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
   });
-  const activeChunk = playerText.querySelector('.pt-chunk.active');
-  if (activeChunk && playerExpanded && activePlayerTab === 'text') {
-    scrollToChunk(activeChunk);
+  const activeEl = playerText.querySelector('.pt-chunk.active');
+  if (activeEl && playerExpanded && activePlayerTab === 'text') {
+    scrollToChunk(activeEl);
   }
 }
 

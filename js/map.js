@@ -86,7 +86,10 @@ export function openArticlePopup(marker, article) {
     : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
   const wikiBtn = `<a class="popup-icon-btn" href="https://en.wikipedia.org/wiki/${encodeURIComponent(article.title)}" target="_blank" title="Wikipedia"><svg viewBox="0 0 24 24"><path d="M14.97 18.95L12 12.52l-2.97 6.43a.5.5 0 01-.91-.01L4.58 9.68a.5.5 0 01.91-.42L9 17.05l2.54-5.5a.5.5 0 01.91 0L15 17.05l3.51-7.79a.5.5 0 01.91.42l-3.54 9.26a.5.5 0 01-.91.01z"/></svg></a>`;
   const dirBtn = `<a class="popup-icon-btn" href="https://www.google.com/maps/dir/?api=1&destination=${article.lat},${article.lon}" target="_blank" title="Directions"><svg viewBox="0 0 24 24"><path d="M21.71 11.29l-9-9a1 1 0 00-1.42 0l-9 9a1 1 0 000 1.42l9 9a1 1 0 001.42 0l9-9a1 1 0 000-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 011-1h5V7.5l3.5 3.5-3.5 3.5z"/></svg></a>`;
-  const extractArea = `<div class="popup-extract-area" id="popupExtractArea"><p class="popup-text">${safeExtract}</p></div>`;
+  const extractContent = safeExtract
+    ? `<p class="popup-text">${safeExtract}</p>`
+    : `<p class="popup-text popup-text-hint">Tap to read this article</p>`;
+  const extractArea = `<div class="popup-extract-area" id="popupExtractArea">${extractContent}</div>`;
 
   const closeHtml = `<button class="popup-close" aria-label="Close">\u00d7</button>`;
   const html = article.thumb ? `
@@ -190,7 +193,7 @@ export async function loadNearbyAt(lat, lon, zoom, opts = {}) {
       renderArticleMarkers(placeholders);
       toast('Loading details\u2026');
     };
-    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders });
+    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders, userLatLon: state.userLatLng });
     // Replace placeholders with fully enriched markers (thumbnails, descriptions)
     renderArticleMarkers(articles);
     sub.textContent = `${articles.length} articles nearby \u00b7 tap a pin to play`;
@@ -235,17 +238,21 @@ function startWatching() {
   );
 }
 
-// Re-request fresh location and pan to it
+// Re-request fresh location, pan to it, and reload articles
 export async function recenterOnUser() {
   toast('Getting your location\u2026');
   try {
     const c = await getLocation();
-    setUserLocation(c.latitude, c.longitude);
-    state.map.setView([c.latitude, c.longitude], Math.max(state.map.getZoom(), 15));
+    const zoom = Math.max(state.map.getZoom(), 15);
+    // Use window.loadNearbyAt so app.js wrapper runs (sets lastLoadedCenter/Zoom)
+    await (window.loadNearbyAt || loadNearbyAt)(c.latitude, c.longitude, zoom);
   } catch (e) {
     // Fall back to last known position
-    if (state.userLatLng) state.map.setView(state.userLatLng, 16);
-    else toast('Location unavailable', 'error', 2000);
+    if (state.userLatLng) {
+      await (window.loadNearbyAt || loadNearbyAt)(state.userLatLng[0], state.userLatLng[1], 16);
+    } else {
+      toast('Location unavailable', 'error', 2000);
+    }
   }
 }
 

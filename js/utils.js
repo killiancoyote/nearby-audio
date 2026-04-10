@@ -17,8 +17,10 @@ export function escHtml(s) {
 }
 
 export function formatDistance(m) {
-  if (m < 1000) return `${Math.round(m)} m away`;
-  return `${(m / 1000).toFixed(1)} km away`;
+  const ft = m * 3.28084;
+  if (ft < 1000) return `${Math.round(ft)} ft`;
+  const mi = ft / 5280;
+  return `${mi.toFixed(1)} mi`;
 }
 
 export function chunkText(text) {

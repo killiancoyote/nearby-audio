@@ -166,7 +166,7 @@ async function batchFetchSummaries(pages, userLat, userLon) {
   return results;
 }
 
-export async function fetchNearby(lat, lon, radiusOrBounds = 1000, { onPlaceholders } = {}) {
+export async function fetchNearby(lat, lon, radiusOrBounds = 1000, { onPlaceholders, userLatLon } = {}) {
   if (typeof radiusOrBounds === 'object' && radiusOrBounds.north != null) {
     const { north, south, east, west } = radiusOrBounds;
 
@@ -188,14 +188,19 @@ export async function fetchNearby(lat, lon, radiusOrBounds = 1000, { onPlacehold
     }
 
     // Step 4: Fetch summaries for ONLY the selected ~50 (1 API call, ~300ms)
-    const articles = await batchFetchSummaries(selected, lat, lon);
+    // Use user's GPS position for distance calc (not map center)
+    const distLat = userLatLon ? userLatLon[0] : lat;
+    const distLon = userLatLon ? userLatLon[1] : lon;
+    const articles = await batchFetchSummaries(selected, distLat, distLon);
     return articles;
   }
 
   // Radius fallback (initial load before map is ready)
   const r = Math.max(10, Math.min(10000, Math.round(radiusOrBounds)));
   const pages = await geoSearchAt(lat, lon, r);
-  return batchFetchSummaries(pages, lat, lon);
+  const distLat = userLatLon ? userLatLon[0] : lat;
+  const distLon = userLatLon ? userLatLon[1] : lon;
+  return batchFetchSummaries(pages, distLat, distLon);
 }
 
 export async function fetchFullArticle(title) {
@@ -215,11 +220,14 @@ export async function fetchFullArticle(title) {
       if (headingEl) headingEl.remove();
       if (SKIP.test(heading)) return;
       const text = (sec.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
-      if (text.length > 0) sections.push({ heading, text });
+      if (text.length === 0) return;
+      sections.push({ heading, text });
     });
   } else {
-    const body = (doc.body.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
-    if (body.length > 0) sections.push({ heading: 'Introduction', text: body });
+    const text = (doc.body.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
+    if (text.length > 0) {
+      sections.push({ heading: 'Introduction', text });
+    }
   }
   return sections;
 }
