@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=14';
-import { fetchFullArticle } from './api.js?v=14';
-import { state } from './state.js?v=14';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=14';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=15';
+import { fetchFullArticle } from './api.js?v=15';
+import { state } from './state.js?v=15';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=15';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -467,8 +467,7 @@ export function updateArticleTextHighlight() {
     }
   });
   playerText.querySelectorAll('.pt-section-heading').forEach(el => {
-    const si = parseInt(el.dataset.si);
-    el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
+    el.style.color = '#000';
   });
   const activeEl = playerText.querySelector('.pt-chunk.active');
   if (activeEl && playerExpanded) {

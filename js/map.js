@@ -1,9 +1,9 @@
-import { state } from './state.js?v=14';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=14';
-import { escHtml, formatDistance, toast } from './utils.js?v=14';
-import { fetchNearby } from './api.js?v=14';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=14';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=14';
+import { state } from './state.js?v=15';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=15';
+import { escHtml, formatDistance, toast } from './utils.js?v=15';
+import { fetchNearby } from './api.js?v=15';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=15';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=15';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
