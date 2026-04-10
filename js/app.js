@@ -1,7 +1,7 @@
-import { state } from './state.js?v=7';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=7';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=7';
-import { fetchNearby, fetchFullArticle } from './api.js?v=7';
+import { state } from './state.js?v=8';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=8';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=8';
+import { fetchNearby, fetchFullArticle } from './api.js?v=8';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,10 +9,10 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=7';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=7';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=7';
-import { hideSearchResults } from './search.js?v=7';
+} from './player.js?v=8';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=8';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=8';
+import { hideSearchResults } from './search.js?v=8';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -31,10 +31,9 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded, playerPeek } from './player.js?v=7';
+import { speedIdx, playerExpanded } from './player.js?v=8';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
-Object.defineProperty(window, 'playerPeek', { get() { return playerPeek; } });
 
 // --- DOM refs for event wiring ---
 const player = document.getElementById('player');
@@ -81,9 +80,7 @@ function onDragStart(e) {
   isDragging = true;
   player.classList.add('dragging');
   player.classList.remove('snapping');
-  // Switch to expanded layout so content is visible during drag
   player.classList.add('expanded');
-  player.classList.remove('peek');
 
   const clientY = e.touches[0].clientY;
   dragStartY = clientY;
@@ -126,37 +123,23 @@ function onDragEnd(e) {
 
   const currentY = getCurrentTranslateY();
   const playerH = player.offsetHeight;
-  const peekY = playerH - 160;
 
   // Project position forward based on momentum
   const projected = currentY + velocity * 200;
 
-  // Find nearest snap: expanded (0), peek (peekY), hidden (playerH)
-  const snaps = [
-    { name: 'expanded', y: 0 },
-    { name: 'peek', y: peekY },
-    { name: 'hidden', y: playerH },
-  ];
-
-  // Velocity-based override: fast flick always goes to next snap
+  // Two snap points: expanded (0) and hidden (playerH)
   const FLICK_THRESHOLD = 0.5;
   let target;
 
   if (velocity > FLICK_THRESHOLD) {
-    // Flicking down
-    if (playerExpanded) target = 'peek';
-    else target = 'hidden';
+    // Flicking down — dismiss
+    target = 'hidden';
   } else if (velocity < -FLICK_THRESHOLD) {
-    // Flicking up
-    if (playerPeek || !playerExpanded) target = 'expanded';
-    else target = 'expanded';
+    // Flicking up — expand
+    target = 'expanded';
   } else {
-    // No strong flick — snap to nearest based on projected position
-    let closest = snaps[0];
-    for (const s of snaps) {
-      if (Math.abs(projected - s.y) < Math.abs(projected - closest.y)) closest = s;
-    }
-    target = closest.name;
+    // No strong flick — snap to nearest
+    target = projected < playerH / 2 ? 'expanded' : 'hidden';
   }
 
   if (target === 'hidden') {

@@ -134,7 +134,6 @@ html, body {
   display: flex; flex-direction: column; gap: 0;
   transition: bottom 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-body:has(.player.peek) .floating-controls,
 body:has(.player.expanded) .floating-controls {
   bottom: calc(160px + env(safe-area-inset-bottom));
 }
@@ -365,7 +364,7 @@ body:has(.player.expanded) .floating-controls {
   background: rgba(255,255,255,0.98); border-top: 1px solid rgba(0,0,0,0.06);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   display: flex; flex-direction: column;
-  height: 85vh;
+  height: 100vh;
   border-radius: 16px 16px 0 0;
   transform: translateY(100%);
   will-change: transform;
@@ -374,15 +373,6 @@ body:has(.player.expanded) .floating-controls {
 .player.snapping { transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); }
 .player.dragging { transition: none !important; }
 
-/* --- Peek state: compact strip --- */
-.player.peek .player-top { display: none; }
-.player.peek .player-text { display: block; max-height: 80px; overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-}
-.player.peek .player-progress { display: none; }
-.player.peek .player-controls { display: none; }
-.player.peek .player-sections-strip { display: none; }
 
 /* --- Drag handle --- */
 .player-handle {
@@ -416,11 +406,6 @@ body:has(.player.expanded) .floating-controls {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* Peek mode: show title inline with handle */
-.player.peek .player-top { display: flex; padding: 0 12px 0; }
-.player.peek .player-top-info { text-align: left; }
-.player.peek .player-top-btn:first-child { display: none; }
-.player.peek .player-title { font-size: 15px; }
 
 /* --- Thumbnail in top bar --- */
 .player-top-thumb {
@@ -495,10 +480,10 @@ body:has(.player.expanded) .floating-controls {
 }
 .player-progress-text { font-size: 11px; color: #999; min-width: 40px; text-align: right; }
 
-/* --- Play controls (bottom, thumb zone) --- */
+/* --- Play controls (Spotify-style thumb zone) --- */
 .player-controls {
-  display: flex; align-items: center; justify-content: center; gap: 12px;
-  padding: 16px 12px 8px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  padding: 20px 16px 12px; flex-shrink: 0;
 }
 .pc-btn {
   background: none; border: none; color: #1a1a1a; cursor: pointer;
@@ -506,20 +491,21 @@ body:has(.player.expanded) .floating-controls {
   font-size: 14px; position: relative; flex-shrink: 0;
 }
 .pc-btn:active { opacity: 0.5; }
-.pc-btn svg { width: 28px; height: 28px; fill: currentColor; }
-.pc-main { width: 56px; height: 56px; border-radius: 28px; background: #1a1a1a; color: white; }
+.pc-btn svg { width: 36px; height: 36px; fill: currentColor; }
+.pc-main { width: 64px; height: 64px; border-radius: 32px; background: #1a1a1a; color: white; margin: 0 20px; }
 .pc-main:active { background: #333; }
-.pc-main svg { width: 24px; height: 24px; }
+.pc-main svg { width: 28px; height: 28px; }
+.pc-wing { flex: 1; display: flex; justify-content: center; }
 .pc-speed {
-  font-size: 12px; font-weight: 700; color: #666;
-  background: #f0f0f0; border: none; border-radius: 8px;
-  padding: 6px 8px; min-width: 38px; text-align: center;
+  font-size: 13px; font-weight: 700; color: #666;
+  background: #f0f0f0; border: none; border-radius: 10px;
+  padding: 8px 10px; text-align: center;
 }
 .pc-speed:active { background: #e0e0e0; }
 .pc-hd {
-  font-size: 10px; font-weight: 800; letter-spacing: 0.5px; color: #999;
-  background: #f0f0f0; border: 1.5px solid #ddd; border-radius: 8px;
-  padding: 4px 8px; min-width: 36px; text-align: center;
+  font-size: 11px; font-weight: 800; letter-spacing: 0.5px; color: #999;
+  background: #f0f0f0; border: 1.5px solid #ddd; border-radius: 10px;
+  padding: 6px 10px; text-align: center;
   transition: all 0.2s;
 }
 .pc-hd.active {

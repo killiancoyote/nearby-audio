@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=7';
-import { fetchFullArticle } from './api.js?v=7';
-import { state } from './state.js?v=7';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=7';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=8';
+import { fetchFullArticle } from './api.js?v=8';
+import { state } from './state.js?v=8';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=8';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -18,7 +18,6 @@ const playerThumbImg = document.getElementById('playerThumbImg');
 export const SPEEDS = [0.8, 1, 1.15, 1.3, 1.5];
 export let speedIdx = 1;
 export let playerExpanded = false;
-export let playerPeek = false;
 let utteranceGen = 0; // generation counter to ignore stale onend/onerror callbacks
 let cachedVoice = null; // best voice, resolved once voices load
 
@@ -343,13 +342,11 @@ export function cycleSpeed() {
 }
 
 // Snap points: translateY values (0 = fully visible, larger = more hidden)
-// These are computed relative to the player's 85vh height
 function getSnapPoints() {
-  const playerH = player.offsetHeight || window.innerHeight * 0.85;
+  const playerH = player.offsetHeight || window.innerHeight;
   return {
-    hidden: playerH,             // fully offscreen
-    peek: playerH - 160,         // ~160px visible (handle + title + first chunk)
-    expanded: 0,                 // fully visible
+    hidden: playerH,
+    expanded: 0,
   };
 }
 
@@ -364,29 +361,19 @@ export function snapTo(name, animate = true) {
     player.addEventListener('transitionend', onDone);
   }
   player.style.transform = `translateY(${y}px)`;
-  // Update state classes after transition
   if (name === 'expanded') {
     playerExpanded = true;
-    playerPeek = false;
     player.classList.add('expanded');
-    player.classList.remove('peek');
     playerText.style.display = 'block';
     updateArticleTextHighlight();
-  } else if (name === 'peek') {
-    playerExpanded = false;
-    playerPeek = true;
-    player.classList.remove('expanded');
-    player.classList.add('peek');
-    playerText.style.display = 'block';
   } else {
     playerExpanded = false;
-    playerPeek = false;
-    player.classList.remove('expanded', 'peek');
+    player.classList.remove('expanded');
   }
 }
 
 export function expandPlayer() { snapTo('expanded'); }
-export function collapsePlayer() { snapTo('peek'); }
+export function collapsePlayer() { snapTo('hidden'); }
 export function togglePlayerExpanded() {
   if (playerExpanded) collapsePlayer();
   else expandPlayer();
@@ -405,7 +392,7 @@ export function showPlayer() {
     playerThumbImg.classList.remove('visible');
   }
   playerText.style.display = 'block';
-  snapTo('peek');
+  snapTo('expanded');
   updatePlayerUI();
 }
 

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Nearby Audio</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/styles.css?v=7">
+<link rel="stylesheet" href="css/styles.css?v=8">
 </head>
 <body>
   <div id="map"></div>
@@ -77,7 +77,7 @@
 
     <!-- Play controls (thumb zone) -->
     <div class="player-controls">
-      <button class="pc-btn pc-speed" id="speedBtn" title="Playback speed">1x</button>
+      <div class="pc-wing"><button class="pc-btn pc-speed" id="speedBtn" title="Playback speed">1x</button></div>
       <button class="pc-btn" id="prevSectionBtn" title="Previous section">
         <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
       </button>
@@ -87,7 +87,7 @@
       <button class="pc-btn" id="nextSectionBtn" title="Next section">
         <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6z"/></svg>
       </button>
-      <button class="pc-btn pc-hd" id="hdVoiceBtn" title="HD Voice">HD Audio</button>
+      <div class="pc-wing"><button class="pc-btn pc-hd" id="hdVoiceBtn" title="HD Voice">HD Audio</button></div>
     </div>
 
     <!-- Sections strip (below controls, like Spotify "About the artist") -->
@@ -97,6 +97,6 @@
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="module" src="js/app.js?v=7"></script>
+<script type="module" src="js/app.js?v=8"></script>
 </body>
 </html>
