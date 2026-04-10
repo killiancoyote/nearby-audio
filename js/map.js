@@ -1,9 +1,9 @@
-import { state } from './state.js?v=4';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=4';
-import { escHtml, formatDistance, toast } from './utils.js?v=4';
-import { fetchNearby } from './api.js?v=4';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=4';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=4';
+import { state } from './state.js?v=5';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=5';
+import { escHtml, formatDistance, toast } from './utils.js?v=5';
+import { fetchNearby } from './api.js?v=5';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=5';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=5';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
@@ -79,7 +79,7 @@ export function openArticlePopup(marker, article) {
   const listenMin = Math.max(1, Math.round(wordCount / 150));
   const metaParts = [];
   if (catLabel) metaParts.push(catLabel);
-  metaParts.push(formatDistance(article.distance));
+  if (state.userGpsLatLng) metaParts.push(formatDistance(article.distance));
   if (wordCount > 0) metaParts.push(`~${listenMin} min read`);
   const playIcon = isCurrent && state.isPlaying
     ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
@@ -193,7 +193,7 @@ export async function loadNearbyAt(lat, lon, zoom, opts = {}) {
       renderArticleMarkers(placeholders);
       toast('Loading details\u2026');
     };
-    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders, userLatLon: state.userGpsLatLng || state.userLatLng });
+    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders, userLatLon: state.userGpsLatLng });
     // Replace placeholders with fully enriched markers (thumbnails, descriptions)
     renderArticleMarkers(articles);
     sub.textContent = `${articles.length} articles nearby \u00b7 tap a pin to play`;
