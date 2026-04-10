@@ -2,7 +2,7 @@ import { state } from './state.js';
 import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js';
 import { escHtml, formatDistance, toast } from './utils.js';
 import { fetchNearby } from './api.js';
-import { startArticle, stopPlayback } from './player.js';
+import { startArticle, openArticle, stopPlayback } from './player.js';
 import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js';
 
 const emptyState = document.getElementById('emptyState');
@@ -74,9 +74,13 @@ export function openArticlePopup(marker, article) {
   const safeExtract = escHtml(article.extract || '');
   const cat = article._category || DEFAULT_CAT;
   const catLabel = cat.id !== 'default' ? cat.id.charAt(0).toUpperCase() + cat.id.slice(1) : '';
+  // Estimate listening time: ~150 words per minute for TTS
+  const wordCount = (article.extract || '').split(/\s+/).filter(Boolean).length;
+  const listenMin = Math.max(1, Math.round(wordCount / 150));
   const metaParts = [];
   if (catLabel) metaParts.push(catLabel);
   metaParts.push(formatDistance(article.distance));
+  if (wordCount > 0) metaParts.push(`~${listenMin} min`);
   const playIcon = isCurrent && state.isPlaying
     ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
     : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
@@ -145,7 +149,7 @@ export function openArticlePopup(marker, article) {
     if (extractArea) {
       extractArea.addEventListener('click', () => {
         if (!state.currentArticle || state.currentArticle.title !== article.title) {
-          startArticle(article);
+          openArticle(article);
         }
       });
     }

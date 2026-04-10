@@ -3,7 +3,7 @@ import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categor
 import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js';
 import { fetchNearby, fetchFullArticle } from './api.js';
 import {
-  SPEEDS, startArticle, playCurrentSection, speakNextChunk,
+  SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
@@ -19,7 +19,7 @@ Object.assign(window, {
   state, CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon,
   escHtml, formatDistance, chunkText,
   fetchNearby, fetchFullArticle,
-  SPEEDS, startArticle, playCurrentSection, speakNextChunk,
+  SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
@@ -201,7 +201,7 @@ function shouldShowSearchBtn() {
   const center = state.map.getCenter();
   const dist = state.map.distance(center, lastLoadedCenter);
   const zoomDelta = lastLoadedZoom != null ? Math.abs(state.map.getZoom() - lastLoadedZoom) : 0;
-  return dist > 300 || zoomDelta >= 2;
+  return dist > 300 || zoomDelta >= 1;
 }
 
 function updateSearchBtnVisibility() {

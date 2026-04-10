@@ -112,6 +112,35 @@ if (localStorage.getItem('hdVoice') === '1') {
   });
 }
 
+// Open article in the player without auto-playing (read mode)
+export async function openArticle(article) {
+  stopPlayback();
+  toast('Loading full article\u2026');
+  let full;
+  try {
+    const sections = await fetchFullArticle(article.title);
+    full = { ...article, sections };
+  } catch (e) {
+    toast('Failed to load: ' + e.message, 'error');
+    return;
+  }
+  if (!full.sections.length) { toast('No content found', 'error'); return; }
+  hideToast();
+  state.currentArticle = full;
+  state.currentSectionIdx = 0;
+  state.currentChunks = chunkText(full.sections[0].text);
+  state.currentChunkIdx = 0;
+  // Close popup and recenter map to the article's pin
+  if (state.map) {
+    state.map.closePopup();
+    if (full.lat != null && full.lon != null) {
+      state.map.panTo([full.lat, full.lon], { animate: true, duration: 0.3 });
+    }
+  }
+  showPlayer();
+  updatePlayerUI();
+}
+
 export async function startArticle(article) {
   stopPlayback();
   toast('Loading full article\u2026');
