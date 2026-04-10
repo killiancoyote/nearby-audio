@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=9';
-import { fetchFullArticle } from './api.js?v=9';
-import { state } from './state.js?v=9';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=9';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=10';
+import { fetchFullArticle } from './api.js?v=10';
+import { state } from './state.js?v=10';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=10';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -107,6 +107,18 @@ if (localStorage.getItem('hdVoice') === '1') {
   });
 }
 
+// Pan map so pin is centered in the visible strip above the tray (top ~22%)
+function panToVisibleCenter(lat, lon) {
+  if (!state.map || lat == null || lon == null) return;
+  const mapH = state.map.getSize().y;
+  const visibleH = mapH * 0.22; // top 22% is visible when tray is open
+  // Offset = difference between map center and visible strip center
+  const offsetY = (mapH / 2) - (visibleH / 2);
+  const point = state.map.latLngToContainerPoint([lat, lon]);
+  const shifted = state.map.containerPointToLatLng([point.x, point.y + offsetY]);
+  state.map.panTo(shifted, { animate: true, duration: 0.3 });
+}
+
 // Open article in the player without auto-playing (read mode)
 export async function openArticle(article) {
   stopPlayback();
@@ -129,7 +141,7 @@ export async function openArticle(article) {
   if (state.map) {
     state.map.closePopup();
     if (full.lat != null && full.lon != null) {
-      state.map.panTo([full.lat, full.lon], { animate: true, duration: 0.3 });
+      panToVisibleCenter(full.lat, full.lon);
     }
   }
   showPlayer();
@@ -156,7 +168,7 @@ export async function startArticle(article) {
   if (state.map) {
     state.map.closePopup();
     if (full.lat != null && full.lon != null) {
-      state.map.panTo([full.lat, full.lon], { animate: true, duration: 0.3 });
+      panToVisibleCenter(full.lat, full.lon);
     }
   }
   playCurrentSection();
