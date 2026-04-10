@@ -221,12 +221,37 @@ export function clearPlayingMarker() {
   }
 }
 
+// Start continuous location tracking — silently moves the blue dot
+function startWatching() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(
+    p => setUserLocation(p.coords.latitude, p.coords.longitude),
+    () => {}, // silently ignore errors (tunnel, airplane mode, etc.)
+    { enableHighAccuracy: true, maximumAge: 10000 }
+  );
+}
+
+// Re-request fresh location and pan to it
+export async function recenterOnUser() {
+  toast('Getting your location\u2026');
+  try {
+    const c = await getLocation();
+    setUserLocation(c.latitude, c.longitude);
+    state.map.setView([c.latitude, c.longitude], Math.max(state.map.getZoom(), 15));
+  } catch (e) {
+    // Fall back to last known position
+    if (state.userLatLng) state.map.setView(state.userLatLng, 16);
+    else toast('Location unavailable', 'error', 2000);
+  }
+}
+
 export async function initWithMyLocation() {
   toast('Getting your location\u2026');
   try {
     const c = await getLocation();
     // Use window.loadNearbyAt so app.js wrapper runs (sets lastLoadedCenter/Zoom)
     await (window.loadNearbyAt || loadNearbyAt)(c.latitude, c.longitude);
+    startWatching(); // begin continuous tracking after initial fix
   } catch (e) {
     toast('Location unavailable \u2014 showing Greenpoint', 'error', 3000);
     await (window.loadNearbyAt || loadNearbyAt)(40.7308, -73.9544);

@@ -11,7 +11,7 @@ import {
   toggleHDVoice,
 } from './player.js';
 import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js';
 import { hideSearchResults } from './search.js';
 
 // --- Expose on window for tests ---
@@ -25,7 +25,7 @@ Object.assign(window, {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo, toggleHDVoice,
   buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet,
-  initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker,
+  initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker,
   hideSearchResults,
 });
 
@@ -184,7 +184,7 @@ if (playerTop) playerTop.addEventListener('touchstart', onDragStart, { passive: 
 // --- Map controls ---
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
-recenterBtn.addEventListener('click', () => { if (state.userLatLng) state.map.setView(state.userLatLng, 16); });
+recenterBtn.addEventListener('click', () => recenterOnUser());
 
 // Close search results and filter sheet when tapping map
 document.getElementById('map').addEventListener('click', () => { hideSearchResults(); closeFilterSheet(); });
