@@ -33,12 +33,36 @@ export function classifyArticle(description) {
   return DEFAULT_CAT;
 }
 
-export function makePinIcon(cat, delay, size) {
+function truncateLabel(title) {
+  if (!title) return '';
+  // Strip trailing parentheticals like " (Brooklyn)" or " (neighborhood)"
+  let label = title.replace(/\s*\([^)]*\)\s*$/, '');
+  if (label.length > 18) label = label.slice(0, 16) + '\u2026';
+  return label;
+}
+
+export function makePinIcon(cat, delay, size, thumb, title) {
   size = size || 32;
   const half = size / 2;
+  const wrapW = Math.max(size, 80);
+  const label = truncateLabel(title);
+  const labelHtml = label ? `<div class="pin-label">${label}</div>` : '';
+
+  let pinHtml;
+  if (thumb) {
+    pinHtml = `<div class="cat-pin cat-pin-thumb" style="border-color:${cat.color};width:${size}px;height:${size}px;color:${cat.color}">` +
+      `<img src="${thumb}" onerror="this.style.display='none';this.nextElementSibling.style.display='';this.parentElement.style.background='${cat.color}';this.parentElement.classList.remove('cat-pin-thumb')" />` +
+      `<svg viewBox="0 0 24 24" style="display:none">${cat.icon}</svg></div>`;
+  } else {
+    pinHtml = `<div class="cat-pin" style="background:${cat.color};width:${size}px;height:${size}px;color:${cat.color}">` +
+      `<svg viewBox="0 0 24 24">${cat.icon}</svg></div>`;
+  }
+
   return L.divIcon({
-    className: '',
-    html: `<div class="cat-pin" style="background:${cat.color};animation-delay:${delay}ms;width:${size}px;height:${size}px"><svg viewBox="0 0 24 24">${cat.icon}</svg></div>`,
-    iconSize: [size, size], iconAnchor: [half, half], popupAnchor: [0, -half + 2],
+    className: 'pin-icon-container',
+    html: `<div class="pin-wrapper" style="animation-delay:${delay}ms">${pinHtml}${labelHtml}</div>`,
+    iconSize: [wrapW, size + 18],
+    iconAnchor: [wrapW / 2, size / 2],
+    popupAnchor: [0, -half + 2],
   });
 }

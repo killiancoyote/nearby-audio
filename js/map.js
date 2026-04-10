@@ -16,6 +16,13 @@ export function initMap(lat, lon) {
     maxZoom: 20, attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> \u00a9 <a href="https://carto.com/">CARTO</a>',
   }).addTo(state.map);
   setUserLocation(lat, lon);
+  // Hide labels when zoomed out to reduce clutter
+  state.map.on('zoomend', () => {
+    const show = state.map.getZoom() >= 14;
+    document.querySelectorAll('.pin-label').forEach(el => {
+      el.style.display = show ? '' : 'none';
+    });
+  });
 }
 
 export function setUserLocation(lat, lon) {
@@ -48,8 +55,10 @@ function renderArticleMarkers(articles) {
     const cat = classifyArticle(a.description);
     a._category = cat;
     const len = (a.extract || '').length;
-    const pinSize = len > 300 ? 42 : len > 100 ? 32 : 22;
-    const icon = makePinIcon(cat, i * 40, pinSize);
+    const pinSize = a.thumb
+      ? (len > 300 ? 44 : 36)
+      : (len > 300 ? 42 : len > 100 ? 32 : 22);
+    const icon = makePinIcon(cat, i * 40, pinSize, a.thumb, a.title);
     const marker = L.marker([a.lat, a.lon], { icon }).addTo(state.map);
     marker._articleData = a;
     marker.on('click', () => openArticlePopup(marker, a));
