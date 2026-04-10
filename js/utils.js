@@ -18,8 +18,9 @@ export function escHtml(s) {
 
 export function formatDistance(m) {
   const ft = m * 3.28084;
-  if (ft < 1000) return `${Math.round(ft)} ft`;
   const mi = ft / 5280;
+  if (mi > 99) return 'Far away';
+  if (ft < 1000) return `${Math.round(ft)} ft`;
   return `${mi.toFixed(1)} mi`;
 }
 
