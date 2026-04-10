@@ -134,7 +134,8 @@ html, body {
   display: flex; flex-direction: column; gap: 0;
   transition: bottom 0.35s cubic-bezier(0.25, 1, 0.5, 1);
 }
-body:has(.player.expanded) .floating-controls {
+body:has(.player.expanded) .floating-controls,
+body:has(.player.open) .floating-controls {
   bottom: calc(160px + env(safe-area-inset-bottom));
 }
 .fc-btn {
@@ -373,6 +374,10 @@ body:has(.player.expanded) .floating-controls {
 .player.snapping { transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); }
 .player.dragging { transition: none !important; }
 
+/* Open state (3/4 height) — same layout as expanded */
+.player.open .player-top { display: flex; }
+.player.open .player-text { overflow-y: auto; }
+
 
 /* --- Drag handle --- */
 .player-handle {
@@ -441,10 +446,12 @@ body:has(.player.expanded) .floating-controls {
 /* --- Sections strip (horizontal, below controls) --- */
 .player-sections-strip {
   display: none; flex-shrink: 0;
-  padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+  padding: 0 12px 0;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
+  margin-bottom: calc(52px + env(safe-area-inset-bottom));
 }
-.player.expanded .player-sections-strip { display: block; }
+.player.expanded .player-sections-strip,
+.player.open .player-sections-strip { display: block; }
 .player-sections-strip #sectionsList {
   display: flex; gap: 8px; white-space: nowrap;
 }

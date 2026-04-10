@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=8';
-import { fetchFullArticle } from './api.js?v=8';
-import { state } from './state.js?v=8';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=8';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=9';
+import { fetchFullArticle } from './api.js?v=9';
+import { state } from './state.js?v=9';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=9';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -343,10 +343,10 @@ export function cycleSpeed() {
 
 // Snap points: translateY values (0 = fully visible, larger = more hidden)
 function getSnapPoints() {
-  const playerH = player.offsetHeight || window.innerHeight;
   return {
-    hidden: playerH,
-    expanded: 0,
+    hidden: window.innerHeight,
+    open: 0,       // bottom-aligned, short height
+    expanded: 0,   // bottom-aligned, full height
   };
 }
 
@@ -361,21 +361,29 @@ export function snapTo(name, animate = true) {
     player.addEventListener('transitionend', onDone);
   }
   player.style.transform = `translateY(${y}px)`;
+  player.classList.remove('expanded', 'open');
   if (name === 'expanded') {
     playerExpanded = true;
     player.classList.add('expanded');
+    player.style.height = '100vh';
+    playerText.style.display = 'block';
+    updateArticleTextHighlight();
+  } else if (name === 'open') {
+    playerExpanded = false;
+    player.classList.add('open');
+    player.style.height = '78vh';
     playerText.style.display = 'block';
     updateArticleTextHighlight();
   } else {
     playerExpanded = false;
-    player.classList.remove('expanded');
+    player.style.height = '100vh';
   }
 }
 
 export function expandPlayer() { snapTo('expanded'); }
 export function collapsePlayer() { snapTo('hidden'); }
 export function togglePlayerExpanded() {
-  if (playerExpanded) collapsePlayer();
+  if (playerExpanded) snapTo('open');
   else expandPlayer();
 }
 
@@ -392,7 +400,7 @@ export function showPlayer() {
     playerThumbImg.classList.remove('visible');
   }
   playerText.style.display = 'block';
-  snapTo('expanded');
+  snapTo('open');
   updatePlayerUI();
 }
 
