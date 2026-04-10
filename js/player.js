@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=6';
-import { fetchFullArticle } from './api.js?v=6';
-import { state } from './state.js?v=6';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=6';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=7';
+import { fetchFullArticle } from './api.js?v=7';
+import { state } from './state.js?v=7';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=7';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -285,12 +285,24 @@ export function togglePause() {
     if (currentHDAudio) hdAudioEl.pause();
     else window.speechSynthesis.pause();
     state.isPlaying = false;
+    updatePlayerUI();
   } else {
-    if (currentHDAudio) hdAudioEl.play();
-    else window.speechSynthesis.resume();
-    state.isPlaying = true;
+    // If TTS was never started (e.g. opened in read mode), start from current position
+    const hasPendingSpeech = currentHDAudio || window.speechSynthesis.speaking || window.speechSynthesis.pending;
+    if (hasPendingSpeech) {
+      if (currentHDAudio) hdAudioEl.play();
+      else window.speechSynthesis.resume();
+      state.isPlaying = true;
+      updatePlayerUI();
+    } else {
+      // Nothing queued — start playing from current chunk
+      state.isPlaying = true;
+      highlightPlayingMarker(state.currentArticle.title);
+      updatePlayerUI();
+      speakNextChunk();
+      refreshActivePopupButton();
+    }
   }
-  updatePlayerUI();
 }
 
 export function skipSection(dir) {
