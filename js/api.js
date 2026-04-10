@@ -170,27 +170,26 @@ export async function fetchNearby(lat, lon, radiusOrBounds = 1000, { onPlacehold
   if (typeof radiusOrBounds === 'object' && radiusOrBounds.north != null) {
     const { north, south, east, west } = radiusOrBounds;
 
-    // Step 1: Fetch generous candidate pool (~270 from 3×3 grid)
+    // Step 1: Fetch candidate coordinates from 3×3 grid (~500ms, 9 parallel calls)
     const candidates = await geoSearchGrid(north, west, south, east);
 
-    // Show placeholder pins immediately so the user sees progress
-    if (onPlaceholders && candidates.length > 0) {
-      const placeholders = selectSpread(
-        candidates.map(p => ({ title: p.title || '', lat: p.lat, lon: p.lon, extract: '', thumb: null, description: '' })),
-        radiusOrBounds, 50
-      );
-      onPlaceholders(placeholders);
+    // Step 2: Select ~50 spatially spread candidates (by position only, instant)
+    const selected = selectSpread(
+      candidates.map(p => ({ ...p, lat: p.lat, lon: p.lon })),
+      radiusOrBounds, 50
+    );
+
+    // Step 3: Show placeholder pins immediately (same locations as final pins)
+    if (onPlaceholders && selected.length > 0) {
+      onPlaceholders(selected.map(p => ({
+        title: p.title || '', lat: p.lat, lon: p.lon,
+        extract: '', thumb: null, description: '',
+      })));
     }
 
-    // Step 2: Fetch summaries for all candidates (~6 batch API calls)
-    const articles = await batchFetchSummaries(candidates, lat, lon);
-
-    // Step 3: Score by notability and sort best-first
-    articles.forEach(a => { a._score = scoreArticle(a); });
-    articles.sort((a, b) => b._score - a._score);
-
-    // Step 4: Greedy distance selection — best articles, evenly spread
-    return selectSpread(articles, radiusOrBounds, 50);
+    // Step 4: Fetch summaries for ONLY the selected ~50 (1 API call, ~300ms)
+    const articles = await batchFetchSummaries(selected, lat, lon);
+    return articles;
   }
 
   // Radius fallback (initial load before map is ready)
