@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js?v=12';
+import { escHtml } from './utils.js?v=13';
 
 // Haversine distance (meters) — used when bbox results don't include dist field
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -141,7 +141,7 @@ async function batchFetchSummaries(pages, userLat, userLon) {
     const batch = pages.slice(i, i + 50);
     const ids = batch.map(p => p.pageid).join('|');
     const url = `https://en.wikipedia.org/w/api.php?action=query&format=json&origin=*` +
-      `&pageids=${ids}&prop=extracts|pageimages|description` +
+      `&pageids=${ids}&prop=extracts|pageimages|description|info` +
       `&exintro=1&explaintext=1&piprop=thumbnail&pithumbsize=600&redirects=1`;
     const res = await fetch(url);
     if (!res.ok) continue;
@@ -153,6 +153,8 @@ async function batchFetchSummaries(pages, userLat, userLon) {
       if (!info || info.missing != null) continue;
       const title = info.title || p.title || '';
       if (!title) continue;
+      // Page length in bytes → estimate readable words (~20 bytes per readable word in wikitext)
+      const pageBytes = info.length || 0;
       results.push({
         title,
         lat: p.lat, lon: p.lon,
@@ -160,6 +162,7 @@ async function batchFetchSummaries(pages, userLat, userLon) {
         extract: info.extract || '',
         thumb: info.thumbnail ? info.thumbnail.source : null,
         description: info.description || '',
+        wordEstimate: Math.round(pageBytes / 20),
       });
     }
   }

@@ -1,9 +1,9 @@
-import { state } from './state.js?v=12';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=12';
-import { escHtml, formatDistance, toast } from './utils.js?v=12';
-import { fetchNearby } from './api.js?v=12';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=12';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=12';
+import { state } from './state.js?v=13';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=13';
+import { escHtml, formatDistance, toast } from './utils.js?v=13';
+import { fetchNearby } from './api.js?v=13';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=13';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=13';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
@@ -74,8 +74,8 @@ export function openArticlePopup(marker, article) {
   const safeExtract = escHtml(article.extract || '');
   const cat = article._category || DEFAULT_CAT;
   const catLabel = cat.id !== 'default' ? cat.id.charAt(0).toUpperCase() + cat.id.slice(1) : '';
-  // Estimate listening time: ~150 words per minute for TTS
-  const wordCount = (article.extract || '').split(/\s+/).filter(Boolean).length;
+  // Estimate read time from full page word count (~150 wpm for TTS)
+  const wordCount = article.wordEstimate || (article.extract || '').split(/\s+/).filter(Boolean).length;
   const listenMin = Math.max(1, Math.round(wordCount / 150));
   const metaParts = [];
   if (catLabel) metaParts.push(catLabel);
