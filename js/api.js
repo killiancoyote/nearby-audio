@@ -151,13 +151,13 @@ async function batchFetchSummaries(pages, userLat, userLon) {
     for (const p of batch) {
       const info = pagesMap[p.pageid];
       if (!info || info.missing != null) continue;
-      const extract = info.extract || '';
-      if (!extract || !info.title) continue;
+      const title = info.title || p.title || '';
+      if (!title) continue;
       results.push({
-        title: info.title,
+        title,
         lat: p.lat, lon: p.lon,
         distance: p.dist != null ? p.dist : haversineDistance(userLat, userLon, p.lat, p.lon),
-        extract,
+        extract: info.extract || '',
         thumb: info.thumbnail ? info.thumbnail.source : null,
         description: info.description || '',
       });
