@@ -1,4 +1,4 @@
-# Nearby Audio
+# YellPoint
 
 Audio Wikipedia — a mobile-first web app that finds Wikipedia articles near your location and reads them aloud via TTS.
 
