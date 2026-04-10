@@ -1,5 +1,5 @@
 export const state = {
-  map: null, userMarker: null, userLatLng: null,
+  map: null, userMarker: null, userLatLng: null, userGpsLatLng: null,
   articleMarkers: [],
   currentArticle: null, currentSectionIdx: 0,
   currentChunks: [], currentChunkIdx: 0,

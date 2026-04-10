@@ -1,9 +1,9 @@
-import { state } from './state.js?v=2';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=2';
-import { escHtml, formatDistance, toast } from './utils.js?v=2';
-import { fetchNearby } from './api.js?v=2';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=2';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=2';
+import { state } from './state.js?v=3';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=3';
+import { escHtml, formatDistance, toast } from './utils.js?v=3';
+import { fetchNearby } from './api.js?v=3';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=3';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=3';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
@@ -80,7 +80,7 @@ export function openArticlePopup(marker, article) {
   const metaParts = [];
   if (catLabel) metaParts.push(catLabel);
   metaParts.push(formatDistance(article.distance));
-  if (wordCount > 0) metaParts.push(`~${listenMin} min`);
+  if (wordCount > 0) metaParts.push(`~${listenMin} min read`);
   const playIcon = isCurrent && state.isPlaying
     ? '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>'
     : '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
@@ -193,7 +193,7 @@ export async function loadNearbyAt(lat, lon, zoom, opts = {}) {
       renderArticleMarkers(placeholders);
       toast('Loading details\u2026');
     };
-    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders, userLatLon: state.userLatLng });
+    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders, userLatLon: state.userGpsLatLng || state.userLatLng });
     // Replace placeholders with fully enriched markers (thumbnails, descriptions)
     renderArticleMarkers(articles);
     sub.textContent = `${articles.length} articles nearby \u00b7 tap a pin to play`;
@@ -232,7 +232,7 @@ export function clearPlayingMarker() {
 function startWatching() {
   if (!navigator.geolocation) return;
   navigator.geolocation.watchPosition(
-    p => setUserLocation(p.coords.latitude, p.coords.longitude),
+    p => { state.userGpsLatLng = [p.coords.latitude, p.coords.longitude]; setUserLocation(p.coords.latitude, p.coords.longitude); },
     () => {}, // silently ignore errors (tunnel, airplane mode, etc.)
     { enableHighAccuracy: true, maximumAge: 10000 }
   );
@@ -243,6 +243,7 @@ export async function recenterOnUser() {
   toast('Getting your location\u2026');
   try {
     const c = await getLocation();
+    state.userGpsLatLng = [c.latitude, c.longitude];
     const zoom = Math.max(state.map.getZoom(), 15);
     // Use window.loadNearbyAt so app.js wrapper runs (sets lastLoadedCenter/Zoom)
     await (window.loadNearbyAt || loadNearbyAt)(c.latitude, c.longitude, zoom);
@@ -260,6 +261,7 @@ export async function initWithMyLocation() {
   toast('Getting your location\u2026');
   try {
     const c = await getLocation();
+    state.userGpsLatLng = [c.latitude, c.longitude];
     // Use window.loadNearbyAt so app.js wrapper runs (sets lastLoadedCenter/Zoom)
     await (window.loadNearbyAt || loadNearbyAt)(c.latitude, c.longitude);
     startWatching(); // begin continuous tracking after initial fix

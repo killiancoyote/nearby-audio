@@ -1,7 +1,7 @@
-import { state } from './state.js?v=2';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=2';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=2';
-import { fetchNearby, fetchFullArticle } from './api.js?v=2';
+import { state } from './state.js?v=3';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=3';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=3';
+import { fetchNearby, fetchFullArticle } from './api.js?v=3';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,10 +9,10 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=2';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=2';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=2';
-import { hideSearchResults } from './search.js?v=2';
+} from './player.js?v=3';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=3';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=3';
+import { hideSearchResults } from './search.js?v=3';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -31,7 +31,7 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded, playerPeek } from './player.js?v=2';
+import { speedIdx, playerExpanded, playerPeek } from './player.js?v=3';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
 Object.defineProperty(window, 'playerPeek', { get() { return playerPeek; } });
