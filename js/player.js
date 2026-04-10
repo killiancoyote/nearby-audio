@@ -25,6 +25,56 @@ let activePlayerTab = 'text';
 let utteranceGen = 0; // generation counter to ignore stale onend/onerror callbacks
 let cachedVoice = null; // best voice, resolved once voices load
 
+// ── Cloud TTS (HD Voice) ──────────────────────────────────────────────
+const TTS_WORKER_URL = 'https://tts-proxy.killianc.workers.dev';
+const HD_VOICE = 'en-US-Chirp3-HD-Charon';
+let useHDVoice = false;
+let hdAudioCache = new Map(); // "si-ci" → Blob URL for instant replay
+let prefetchedAudio = null;   // { key, url } — next chunk's audio, fetched ahead
+let currentHDAudio = null;    // currently playing Audio element
+
+export function toggleHDVoice() {
+  useHDVoice = !useHDVoice;
+  hdAudioCache.clear();
+  prefetchedAudio = null;
+  const btn = document.getElementById('hdVoiceBtn');
+  if (btn) btn.classList.toggle('active', useHDVoice);
+  localStorage.setItem('hdVoice', useHDVoice ? '1' : '0');
+  // If playing, restart current chunk with new voice
+  if (state.isPlaying) {
+    utteranceGen++;
+    window.speechSynthesis.cancel();
+    if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+    speakNextChunk();
+  }
+}
+
+// Fetch MP3 from Cloud TTS worker
+async function fetchCloudAudio(text) {
+  const res = await fetch(TTS_WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voice: HD_VOICE }),
+  });
+  if (!res.ok) throw new Error(`TTS error ${res.status}`);
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}
+
+// Prefetch the next chunk's audio while current chunk plays
+function prefetchNextChunk() {
+  const nextCI = state.currentChunkIdx + 1;
+  const si = state.currentSectionIdx;
+  if (nextCI >= state.currentChunks.length) return; // section boundary — skip prefetch
+  const key = `${si}-${nextCI}`;
+  if (hdAudioCache.has(key)) { prefetchedAudio = { key, url: hdAudioCache.get(key) }; return; }
+  const text = state.currentChunks[nextCI];
+  fetchCloudAudio(text).then(url => {
+    hdAudioCache.set(key, url);
+    prefetchedAudio = { key, url };
+  }).catch(() => {}); // fail silently — will fetch on demand
+}
+
 // Pick the best English voice: Premium/Enhanced > named favorites > any en-US
 function pickBestVoice(voices) {
   const en = voices.filter(v => /^en/i.test(v.lang));
@@ -48,6 +98,15 @@ function initVoices() {
 }
 initVoices();
 window.speechSynthesis.onvoiceschanged = initVoices;
+
+// Restore HD voice preference
+if (localStorage.getItem('hdVoice') === '1') {
+  useHDVoice = true;
+  requestAnimationFrame(() => {
+    const btn = document.getElementById('hdVoiceBtn');
+    if (btn) btn.classList.add('active');
+  });
+}
 
 export async function startArticle(article) {
   stopPlayback();
@@ -97,20 +156,85 @@ export function speakNextChunk() {
     else stopPlayback();
     return;
   }
+
+  const gen = utteranceGen;
   const chunk = state.currentChunks[state.currentChunkIdx];
+
+  if (useHDVoice) {
+    speakChunkHD(chunk, gen);
+  } else {
+    speakChunkLocal(chunk, gen);
+  }
+}
+
+function speakChunkLocal(chunk, gen) {
   const utter = new SpeechSynthesisUtterance(chunk);
   utter.rate = SPEEDS[speedIdx]; utter.pitch = 1.0; utter.lang = 'en-US';
   if (cachedVoice) utter.voice = cachedVoice;
-  const gen = utteranceGen;
   utter.onend = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; updateArticleTextHighlight(); speakNextChunk(); } };
   utter.onerror = () => { if (gen === utteranceGen && state.isPlaying) { state.currentChunkIdx++; speakNextChunk(); } };
   window.speechSynthesis.speak(utter);
+}
+
+async function speakChunkHD(chunk, gen) {
+  const key = `${state.currentSectionIdx}-${state.currentChunkIdx}`;
+  try {
+    // Use prefetched or cached audio if available, else fetch now
+    let url;
+    if (prefetchedAudio && prefetchedAudio.key === key) {
+      url = prefetchedAudio.url;
+      prefetchedAudio = null;
+    } else if (hdAudioCache.has(key)) {
+      url = hdAudioCache.get(key);
+    } else {
+      url = await fetchCloudAudio(chunk);
+      hdAudioCache.set(key, url);
+    }
+
+    if (gen !== utteranceGen) return; // stale — user skipped or stopped
+
+    const audio = new Audio(url);
+    audio.playbackRate = SPEEDS[speedIdx];
+    currentHDAudio = audio;
+
+    // Start prefetching the next chunk while this one plays
+    prefetchNextChunk();
+
+    audio.onended = () => {
+      currentHDAudio = null;
+      if (gen === utteranceGen && state.isPlaying) {
+        state.currentChunkIdx++;
+        updateArticleTextHighlight();
+        speakNextChunk();
+      }
+    };
+    audio.onerror = () => {
+      currentHDAudio = null;
+      // Fallback to local voice on error
+      if (gen === utteranceGen && state.isPlaying) speakChunkLocal(chunk, gen);
+    };
+    try {
+      await audio.play();
+    } catch (playErr) {
+      console.warn('HD audio play failed:', playErr.message);
+      currentHDAudio = null;
+      // Fallback to local voice (autoplay blocked or other issue)
+      if (gen === utteranceGen && state.isPlaying) speakChunkLocal(chunk, gen);
+    }
+  } catch (fetchErr) {
+    console.warn('HD audio fetch failed:', fetchErr.message);
+    // Network error — fallback to local voice
+    if (gen === utteranceGen && state.isPlaying) speakChunkLocal(chunk, gen);
+  }
 }
 
 export function stopPlayback() {
   state.isPlaying = false;
   utteranceGen++;
   if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  hdAudioCache.clear();
+  prefetchedAudio = null;
   clearPlayingMarker();
   state.currentArticle = null;
   state.currentSectionIdx = 0;
@@ -123,10 +247,12 @@ export function stopPlayback() {
 export function togglePause() {
   if (!state.currentArticle) return;
   if (state.isPlaying) {
-    window.speechSynthesis.pause();
+    if (currentHDAudio) currentHDAudio.pause();
+    else window.speechSynthesis.pause();
     state.isPlaying = false;
   } else {
-    window.speechSynthesis.resume();
+    if (currentHDAudio) currentHDAudio.play();
+    else window.speechSynthesis.resume();
     state.isPlaying = true;
   }
   updatePlayerUI();
@@ -136,6 +262,8 @@ export function skipSection(dir) {
   if (!state.currentArticle) return;
   utteranceGen++;
   window.speechSynthesis.cancel();
+  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  prefetchedAudio = null;
   state.currentSectionIdx += dir;
   if (state.currentSectionIdx < 0) state.currentSectionIdx = 0;
   if (state.currentSectionIdx >= state.currentArticle.sections.length) stopPlayback();
@@ -146,6 +274,8 @@ export function jumpToSection(idx) {
   if (!state.currentArticle) return;
   utteranceGen++;
   window.speechSynthesis.cancel();
+  if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+  prefetchedAudio = null;
   state.currentSectionIdx = idx;
   playCurrentSection();
 }
@@ -154,9 +284,14 @@ export function cycleSpeed() {
   speedIdx = (speedIdx + 1) % SPEEDS.length;
   speedBtn.textContent = SPEEDS[speedIdx] + 'x';
   if (state.isPlaying) {
-    utteranceGen++;
-    window.speechSynthesis.cancel();
-    speakNextChunk();
+    if (currentHDAudio) {
+      // HD voice: just change playback rate, no restart needed
+      currentHDAudio.playbackRate = SPEEDS[speedIdx];
+    } else {
+      utteranceGen++;
+      window.speechSynthesis.cancel();
+      speakNextChunk();
+    }
   }
 }
 
@@ -243,6 +378,8 @@ export function renderArticleText() {
       const ci = parseInt(el.dataset.ci);
       utteranceGen++;
       window.speechSynthesis.cancel();
+      if (currentHDAudio) { currentHDAudio.pause(); currentHDAudio = null; }
+      prefetchedAudio = null;
       state.currentSectionIdx = si;
       const sec = state.currentArticle.sections[si];
       state.currentChunks = chunkText(sec.text);

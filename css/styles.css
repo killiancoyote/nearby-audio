@@ -470,3 +470,13 @@ body:has(.player.expanded) .floating-controls {
   padding: 6px 10px; min-width: 44px; text-align: center;
 }
 .pc-speed:active { background: #e0e0e0; }
+.pc-hd {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.5px; color: #999;
+  background: #f0f0f0; border: 1.5px solid #ddd; border-radius: 8px;
+  padding: 4px 8px; min-width: 36px; text-align: center;
+  transition: all 0.2s;
+}
+.pc-hd.active {
+  color: #fff; background: #7c3aed; border-color: #7c3aed;
+}
+.pc-hd:active { opacity: 0.7; }

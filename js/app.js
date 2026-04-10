@@ -8,6 +8,7 @@ import {
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
+  toggleHDVoice,
 } from './player.js';
 import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js';
 import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js';
@@ -22,7 +23,7 @@ Object.assign(window, {
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
   expandPlayer, collapsePlayer, togglePlayerExpanded,
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
-  switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
+  switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo, toggleHDVoice,
   buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet,
   initMap, setUserLocation, loadNearbyAt, initWithMyLocation, openArticlePopup, highlightPlayingMarker, clearPlayingMarker,
   hideSearchResults,
@@ -56,6 +57,7 @@ playPauseBtn.addEventListener('click', togglePause);
 nextSectionBtn.addEventListener('click', () => skipSection(1));
 prevSectionBtn.addEventListener('click', () => skipSection(-1));
 speedBtn.addEventListener('click', cycleSpeed);
+document.getElementById('hdVoiceBtn').addEventListener('click', toggleHDVoice);
 playerHandle.addEventListener('click', () => {
   togglePlayerExpanded();
   // After toggle, update search btn suppression based on new state
