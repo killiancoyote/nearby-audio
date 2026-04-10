@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js?v=13';
+import { escHtml } from './utils.js?v=14';
 
 // Haversine distance (meters) — used when bbox results don't include dist field
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -158,7 +158,7 @@ async function batchFetchSummaries(pages, userLat, userLon) {
       results.push({
         title,
         lat: p.lat, lon: p.lon,
-        distance: p.dist != null ? p.dist : haversineDistance(userLat, userLon, p.lat, p.lon),
+        distance: haversineDistance(userLat, userLon, p.lat, p.lon),
         extract: info.extract || '',
         thumb: info.thumbnail ? info.thumbnail.source : null,
         description: info.description || '',

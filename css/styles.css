@@ -434,13 +434,13 @@ body:has(.player.open) .floating-controls {
 }
 .pt-section-heading:first-child { padding-top: 8px; border-top: none; }
 .pt-chunk {
-  font-size: 15px; line-height: 1.65; color: #bbb;
+  font-size: 15px; line-height: 1.65; color: #444;
   padding: 4px 0; margin: 0;
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, font-weight 0.3s ease;
   cursor: pointer; border-radius: 4px;
 }
-.pt-chunk.active { color: #1a1a1a; font-weight: 500; }
-.pt-chunk.done { color: #999; }
+.pt-chunk.active { color: #1a1a1a; font-weight: 600; }
+.pt-chunk.done { color: #777; }
 .pt-chunk:active { opacity: 0.6; }
 
 /* --- Sections strip (horizontal, below controls) --- */
