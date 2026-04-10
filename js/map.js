@@ -181,7 +181,13 @@ export async function loadNearbyAt(lat, lon, zoom, opts = {}) {
   // Use viewport bounding box for even coverage; fall back to radius if map not ready
   const bounds = viewportBounds();
   try {
-    const articles = await fetchNearby(lat, lon, bounds || 1000);
+    // Render placeholder pins as soon as coordinates are known (before summaries load)
+    const onPlaceholders = (placeholders) => {
+      renderArticleMarkers(placeholders);
+      toast('Loading details\u2026');
+    };
+    const articles = await fetchNearby(lat, lon, bounds || 1000, { onPlaceholders });
+    // Replace placeholders with fully enriched markers (thumbnails, descriptions)
     renderArticleMarkers(articles);
     sub.textContent = `${articles.length} articles nearby \u00b7 tap a pin to play`;
     if (articles.length > 0) toast(`Found ${articles.length} articles`, 'ok', 2000);

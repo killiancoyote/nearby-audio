@@ -51,6 +51,12 @@ tests.html          — 102 tests via iframe + window access
 - Sections like "References", "See also" are skipped for audio
 - Player has three states: hidden → peek (compact, first chunk visible) → expanded (full controls + lyrics reader)
 
+### Cloud TTS
+- **Cloudflare Worker** at `https://tts-proxy.killianc.workers.dev` proxies to Google Cloud TTS Chirp 3 HD
+- API key stored as Cloudflare secret (`GOOGLE_TTS_API_KEY`), never exposed to browser
+- Deploy with `cd workers && npx wrangler deploy`
+- 1M free chars/month, ~$0.09-0.15 per article after that
+
 ## Dev setup
 
 ```bash
@@ -58,6 +64,43 @@ tests.html          — 102 tests via iframe + window access
 python3 -m http.server 8000
 # Then open http://<your-mac-ip>:8000 on your phone
 ```
+
+## Preview & debugging (IMPORTANT — read before using Claude Preview)
+
+### The ES module caching problem
+
+The preview browser aggressively caches ES modules and CSS. `location.reload(true)`, `cache: 'no-store'` fetches, restarting the preview server, and `?v=N` query params on `index.html` **do NOT bust the module cache**. The browser caches each module by its full URL, and sub-imports (e.g. `map.js` importing `categories.js`) are cached independently from the parent.
+
+### What DOES work to bust the cache
+
+1. **Stop the preview server, then start it again** — sometimes works for CSS but rarely for JS modules.
+2. **For CSS only**: Add `?v=N` to the `<link>` tag in `index.html`, reload, then remove it after testing. This works because CSS isn't part of the module graph.
+3. **For JS modules**: The only reliable approach is to **change the filename** of every module in the import chain:
+   - Copy the changed files to new names (e.g. `categories.js` → `categories2.js`)
+   - Update all `import` statements to reference the new names
+   - Update `index.html` if `app.js` was renamed
+   - Test with the new filenames
+   - After verifying, rename everything back and delete the copies
+4. **Dynamic import for quick checks**: `import('/js/foo.js?' + Date.now())` can verify the file content is correct on disk, but this only affects the dynamically imported module — it does NOT update references held by other cached modules.
+
+### Recommended workflow for previewing changes
+
+1. Make your code changes to the real files (e.g. `categories.js`, `map.js`, `styles.css`)
+2. For a **quick CSS-only check**: add `?v=N` to the stylesheet link, screenshot, then revert
+3. For **JS changes**: copy changed files to temp names, update imports, test, then clean up
+4. **Always verify the new code is active** before testing behavior:
+   - Check function `.length` (param count) for modified functions
+   - Check `document.querySelectorAll('.new-class').length` for new DOM elements
+   - Use `fetch('/js/file.js', {cache:'no-store'}).then(r=>r.text()).then(t=>console.log(t.includes('newFunction')))` to verify the file on disk is correct
+5. **After testing**: revert all temp filenames, remove cache-bust params, ensure `git diff` only shows real changes
+
+### Other preview gotchas
+
+- **Python HTTP server caching**: `python3 -m http.server` can serve stale files. Restarting the server helps but doesn't fix browser-side module cache.
+- **`fetch()` vs module cache**: `fetch('/js/file.js', {cache:'no-store'})` bypasses HTTP cache and returns fresh content, but the ES module loader has its own separate cache that `fetch()` cannot clear.
+- **Screenshot failures**: `preview_screenshot` occasionally fails with "Current display surface not available for capture". Just retry — it usually works on the second attempt.
+- **`preview_eval` variable conflicts**: Variables declared with `const`/`let` in eval persist across calls. Use IIFEs `(() => { ... })()` to avoid "Identifier already declared" errors.
+- **Wikipedia image URLs**: Some Wikipedia thumbnail URLs fail to load in the preview browser (return 0x0 natural dimensions). Test with a known-good URL like `https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_logo_black.svg/120px-Apple_logo_black.svg.png` first to isolate image loading issues from CSS issues.
 
 ## Testing
 

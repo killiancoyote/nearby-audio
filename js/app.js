@@ -242,6 +242,7 @@ const wrappedLoadNearbyAt = async function(lat, lon, zoom, opts) {
 window.loadNearbyAt = wrappedLoadNearbyAt;
 
 searchAreaBtn.addEventListener('click', () => {
+  searchAreaBtn.classList.remove('visible'); // hide immediately for responsiveness
   const center = state.map.getCenter();
   wrappedLoadNearbyAt(center.lat, center.lng, state.map.getZoom(), { keepView: true });
 });

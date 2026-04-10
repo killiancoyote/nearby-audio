@@ -166,12 +166,21 @@ async function batchFetchSummaries(pages, userLat, userLon) {
   return results;
 }
 
-export async function fetchNearby(lat, lon, radiusOrBounds = 1000) {
+export async function fetchNearby(lat, lon, radiusOrBounds = 1000, { onPlaceholders } = {}) {
   if (typeof radiusOrBounds === 'object' && radiusOrBounds.north != null) {
     const { north, south, east, west } = radiusOrBounds;
 
     // Step 1: Fetch generous candidate pool (~270 from 3×3 grid)
     const candidates = await geoSearchGrid(north, west, south, east);
+
+    // Show placeholder pins immediately so the user sees progress
+    if (onPlaceholders && candidates.length > 0) {
+      const placeholders = selectSpread(
+        candidates.map(p => ({ title: p.title || '', lat: p.lat, lon: p.lon, extract: '', thumb: null, description: '' })),
+        radiusOrBounds, 50
+      );
+      onPlaceholders(placeholders);
+    }
 
     // Step 2: Fetch summaries for all candidates (~6 batch API calls)
     const articles = await batchFetchSummaries(candidates, lat, lon);
