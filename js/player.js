@@ -330,12 +330,22 @@ export function skipSection(dir) {
 
 export function jumpToSection(idx) {
   if (!state.currentArticle) return;
+  const wasPlaying = state.isPlaying;
   utteranceGen++;
   window.speechSynthesis.cancel();
   hdAudioEl.pause(); currentHDAudio = null;
   prefetchedAudio = null;
   state.currentSectionIdx = idx;
-  playCurrentSection();
+  state.currentChunkIdx = 0;
+  state.currentChunks = chunkText(state.currentArticle.sections[idx]?.text || '');
+  if (wasPlaying) {
+    playCurrentSection();
+  } else {
+    updatePlayerUI();
+  }
+  // Scroll text to the section heading
+  const heading = playerText.querySelector(`.pt-section-heading[data-si="${idx}"]`);
+  if (heading) heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 export function cycleSpeed() {
