@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js?v=5';
+import { escHtml } from './utils.js?v=6';
 
 const searchInput = document.getElementById('searchInput');
 const searchClear = document.getElementById('searchClear');

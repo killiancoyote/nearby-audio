@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js?v=5';
+import { escHtml } from './utils.js?v=6';
 
 // Haversine distance (meters) — used when bbox results don't include dist field
 function haversineDistance(lat1, lon1, lat2, lon2) {
@@ -216,7 +216,7 @@ export async function fetchFullArticle(title) {
   if (sectionEls.length > 0) {
     sectionEls.forEach((sec, i) => {
       const headingEl = sec.querySelector('h1, h2, h3, h4');
-      const heading = headingEl ? headingEl.textContent.trim() : (i === 0 ? 'Introduction' : 'Section');
+      const heading = headingEl ? headingEl.textContent.trim() : (i === 0 ? 'Overview' : 'Section');
       if (headingEl) headingEl.remove();
       if (SKIP.test(heading)) return;
       const text = (sec.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
@@ -226,7 +226,7 @@ export async function fetchFullArticle(title) {
   } else {
     const text = (doc.body.textContent || '').replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim();
     if (text.length > 0) {
-      sections.push({ heading: 'Introduction', text });
+      sections.push({ heading: 'Overview', text });
     }
   }
   return sections;

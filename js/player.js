@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=5';
-import { fetchFullArticle } from './api.js?v=5';
-import { state } from './state.js?v=5';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=5';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=6';
+import { fetchFullArticle } from './api.js?v=6';
+import { state } from './state.js?v=6';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=6';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -11,18 +11,14 @@ const playerProgressFill = document.getElementById('playerProgressFill');
 const playerProgressText = document.getElementById('playerProgressText');
 const playPauseIcon = document.getElementById('playPauseIcon');
 const speedBtn = document.getElementById('speedBtn');
-const sleepBtn = document.getElementById('sleepBtn');
 const sectionsList = document.getElementById('sectionsList');
 const playerText = document.getElementById('playerText');
-const tabText = document.getElementById('tabText');
-const tabSections = document.getElementById('tabSections');
 const playerThumbImg = document.getElementById('playerThumbImg');
 
 export const SPEEDS = [0.8, 1, 1.15, 1.3, 1.5];
 export let speedIdx = 1;
 export let playerExpanded = false;
 export let playerPeek = false;
-let activePlayerTab = 'text';
 let utteranceGen = 0; // generation counter to ignore stale onend/onerror callbacks
 let cachedVoice = null; // best voice, resolved once voices load
 
@@ -362,15 +358,14 @@ export function snapTo(name, animate = true) {
     playerPeek = false;
     player.classList.add('expanded');
     player.classList.remove('peek');
-    switchPlayerTab(activePlayerTab);
+    playerText.style.display = 'block';
     updateArticleTextHighlight();
   } else if (name === 'peek') {
     playerExpanded = false;
     playerPeek = true;
     player.classList.remove('expanded');
     player.classList.add('peek');
-    playerText.style.display = activePlayerTab === 'text' ? 'block' : 'none';
-    document.getElementById('playerSections').style.display = activePlayerTab === 'sections' ? 'block' : 'none';
+    playerText.style.display = 'block';
   } else {
     playerExpanded = false;
     playerPeek = false;
@@ -397,16 +392,13 @@ export function showPlayer() {
     playerThumbImg.src = '';
     playerThumbImg.classList.remove('visible');
   }
-  activePlayerTab = 'text';
   playerText.style.display = 'block';
-  document.getElementById('playerSections').style.display = 'none';
   snapTo('peek');
   updatePlayerUI();
 }
 
 export function hidePlayer() {
   snapTo('hidden');
-  activePlayerTab = 'text';
   playerThumbImg.classList.remove('visible');
 }
 
@@ -458,7 +450,7 @@ export function updateArticleTextHighlight() {
     el.style.color = si <= state.currentSectionIdx ? '#1a1a1a' : '#ccc';
   });
   const activeEl = playerText.querySelector('.pt-chunk.active');
-  if (activeEl && playerExpanded && activePlayerTab === 'text') {
+  if (activeEl && playerExpanded) {
     scrollToChunk(activeEl);
   }
 }
@@ -476,24 +468,8 @@ function scrollToChunk(el, smooth = true) {
   }
 }
 
-export function switchPlayerTab(tab) {
-  activePlayerTab = tab;
-  tabText.classList.toggle('active', tab === 'text');
-  tabSections.classList.toggle('active', tab === 'sections');
-  if (!playerExpanded && !playerPeek) return;
-  if (tab === 'text') {
-    playerText.style.display = 'block';
-    document.getElementById('playerSections').style.display = 'none';
-    // Scroll to active chunk after layout fully completes (double-rAF)
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const active = playerText.querySelector('.pt-chunk.active');
-      if (active) scrollToChunk(active, false);
-    }));
-  } else {
-    playerText.style.display = 'none';
-    document.getElementById('playerSections').style.display = 'block';
-  }
-}
+// Kept as no-op for backwards compat with app.js exports
+export function switchPlayerTab() {}
 
 export function updatePlayerUI() {
   if (!state.currentArticle) return;
@@ -502,7 +478,6 @@ export function updatePlayerUI() {
   const total = state.currentArticle.sections.length;
   const current = state.currentSectionIdx + 1;
   playerSectionLabel.textContent = sec ? sec.heading : '';
-  sleepBtn.textContent = `${current}/${total}`;
   const pct = total > 0 ? (current / total) * 100 : 0;
   playerProgressFill.style.width = pct + '%';
   playerProgressText.textContent = `${current} of ${total}`;
@@ -532,6 +507,9 @@ function updateSectionsList() {
       (i === state.currentSectionIdx ? ' active' : '') +
       (i < state.currentSectionIdx ? ' done' : '');
   });
+  // Scroll active pill into view
+  const active = sectionsList.querySelector('.ps-item.active');
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 }
 
 function refreshActivePopupButton() {

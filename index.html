@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Nearby Audio</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<link rel="stylesheet" href="css/styles.css?v=5">
+<link rel="stylesheet" href="css/styles.css?v=6">
 </head>
 <body>
   <div id="map"></div>
@@ -66,16 +66,8 @@
       </button>
     </div>
 
-    <!-- Main content: tabs + scrollable text/sections (replaces album art) -->
-    <div class="player-tabs">
-      <button class="player-tab active" id="tabText" data-tab="text">Article</button>
-      <button class="player-tab" id="tabSections" data-tab="sections">Sections</button>
-    </div>
+    <!-- Scrollable article text -->
     <div class="player-text" id="playerText"></div>
-    <div class="player-sections" id="playerSections">
-      <div class="player-sections-title">Sections</div>
-      <div id="sectionsList"></div>
-    </div>
 
     <!-- Progress bar -->
     <div class="player-progress">
@@ -83,7 +75,7 @@
       <div class="player-progress-text" id="playerProgressText"></div>
     </div>
 
-    <!-- Play controls (bottom, thumb-reachable) -->
+    <!-- Play controls (thumb zone) -->
     <div class="player-controls">
       <button class="pc-btn pc-speed" id="speedBtn" title="Playback speed">1x</button>
       <button class="pc-btn" id="prevSectionBtn" title="Previous section">
@@ -95,12 +87,16 @@
       <button class="pc-btn" id="nextSectionBtn" title="Next section">
         <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6z"/></svg>
       </button>
-      <button class="pc-btn pc-speed" id="sleepBtn" title="Sections left" style="font-size:11px; color:#666;">--</button>
-      <button class="pc-btn pc-hd" id="hdVoiceBtn" title="HD Voice">HD</button>
+      <button class="pc-btn pc-hd" id="hdVoiceBtn" title="HD Voice">HD Audio</button>
+    </div>
+
+    <!-- Sections strip (below controls, like Spotify "About the artist") -->
+    <div class="player-sections-strip" id="playerSectionsStrip">
+      <div id="sectionsList"></div>
     </div>
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="module" src="js/app.js?v=5"></script>
+<script type="module" src="js/app.js?v=6"></script>
 </body>
 </html>

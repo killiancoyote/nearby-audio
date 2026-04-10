@@ -1,7 +1,7 @@
-import { state } from './state.js?v=5';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=5';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=5';
-import { fetchNearby, fetchFullArticle } from './api.js?v=5';
+import { state } from './state.js?v=6';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=6';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=6';
+import { fetchNearby, fetchFullArticle } from './api.js?v=6';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,10 +9,10 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=5';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=5';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=5';
-import { hideSearchResults } from './search.js?v=5';
+} from './player.js?v=6';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=6';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=6';
+import { hideSearchResults } from './search.js?v=6';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -31,7 +31,7 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded, playerPeek } from './player.js?v=5';
+import { speedIdx, playerExpanded, playerPeek } from './player.js?v=6';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
 Object.defineProperty(window, 'playerPeek', { get() { return playerPeek; } });
@@ -44,8 +44,6 @@ const playPauseBtn = document.getElementById('playPauseBtn');
 const prevSectionBtn = document.getElementById('prevSectionBtn');
 const nextSectionBtn = document.getElementById('nextSectionBtn');
 const speedBtn = document.getElementById('speedBtn');
-const tabText = document.getElementById('tabText');
-const tabSections = document.getElementById('tabSections');
 const zoomInBtn = document.getElementById('zoomInBtn');
 const zoomOutBtn = document.getElementById('zoomOutBtn');
 const recenterBtn = document.getElementById('recenterBtn');
@@ -65,8 +63,6 @@ playerHandle.addEventListener('click', () => {
 });
 playerClose.addEventListener('click', stopPlayback);
 document.getElementById('playerMinimize').addEventListener('click', collapsePlayer);
-tabText.addEventListener('click', () => switchPlayerTab('text'));
-tabSections.addEventListener('click', () => switchPlayerTab('sections'));
 
 // --- Drag gesture (translateY-based bottom sheet) ---
 let dragStartY = 0, dragStartTranslateY = 0, isDragging = false;
