@@ -1,7 +1,7 @@
-import { escHtml } from './utils.js?v=15';
+import { escHtml } from './utils.js?v=16';
 
 // Haversine distance (meters) — used when bbox results don't include dist field
-function haversineDistance(lat1, lon1, lat2, lon2) {
+export function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const toRad = d => d * Math.PI / 180;
   const dLat = toRad(lat2 - lat1);
@@ -121,7 +121,7 @@ function selectSpread(articles, bounds, maxCount = 50) {
 }
 
 // Score article by notability (applied after summaries are fetched)
-function scoreArticle(article) {
+export function scoreArticle(article) {
   const extractLen = (article.extract || '').length;
   const hasThumb = article.thumb ? 1 : 0;
   const descLen = (article.description || '').length;

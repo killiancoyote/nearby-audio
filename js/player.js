@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=15';
-import { fetchFullArticle } from './api.js?v=15';
-import { state } from './state.js?v=15';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=15';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=16';
+import { fetchFullArticle } from './api.js?v=16';
+import { state } from './state.js?v=16';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=16';
 
 // DOM refs
 const player = document.getElementById('player');
@@ -192,10 +192,18 @@ export function speakNextChunk() {
   if (!state.isPlaying) return;
   if (state.currentChunkIdx >= state.currentChunks.length) {
     state.currentSectionIdx++;
+    // Running mode hooks: let running.js decide whether to continue or switch articles
+    if (state.runSession?.active && state.runSession.onSectionEnd) {
+      if (!state.runSession.onSectionEnd(state.currentSectionIdx)) return;
+    }
     if (state.currentSectionIdx < state.currentArticle.sections.length) {
       playCurrentSection();
     } else {
-      stopPlayback();
+      if (state.runSession?.active && state.runSession.onArticleEnd) {
+        state.runSession.onArticleEnd();
+      } else {
+        stopPlayback();
+      }
     }
     return;
   }

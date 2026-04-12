@@ -1,7 +1,7 @@
-import { state } from './state.js?v=15';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=15';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=15';
-import { fetchNearby, fetchFullArticle } from './api.js?v=15';
+import { state } from './state.js?v=16';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=16';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=16';
+import { fetchNearby, fetchFullArticle } from './api.js?v=16';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,10 +9,11 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=15';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=15';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=15';
-import { hideSearchResults } from './search.js?v=15';
+} from './player.js?v=16';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=16';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=16';
+import { hideSearchResults } from './search.js?v=16';
+import { startRunningMode, stopRunningMode } from './running.js?v=16';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -31,7 +32,7 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded } from './player.js?v=15';
+import { speedIdx, playerExpanded } from './player.js?v=16';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
 
@@ -179,6 +180,20 @@ playerTextEl.addEventListener('touchmove', (e) => {
 zoomInBtn.addEventListener('click', () => state.map.zoomIn());
 zoomOutBtn.addEventListener('click', () => state.map.zoomOut());
 recenterBtn.addEventListener('click', () => recenterOnUser());
+
+// --- Running mode ---
+const runBtn = document.getElementById('runBtn');
+const rhStopBtn = document.getElementById('rhStopBtn');
+runBtn.addEventListener('click', () => {
+  if (state.runSession?.active) {
+    stopRunningMode();
+  } else {
+    startRunningMode();
+  }
+});
+rhStopBtn.addEventListener('click', () => stopRunningMode());
+window.startRunningMode = startRunningMode;
+window.stopRunningMode = stopRunningMode;
 
 // Close search results and filter sheet when tapping map
 document.getElementById('map').addEventListener('click', () => { hideSearchResults(); closeFilterSheet(); });

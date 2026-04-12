@@ -519,3 +519,41 @@ body:has(.player.open) .floating-controls {
   color: #fff; background: #7c3aed; border-color: #7c3aed;
 }
 .pc-hd:active { opacity: 0.7; }
+
+/* --- Running Mode --- */
+.fc-run { background: #22c55e; color: white; }
+.fc-run:active { background: #16a34a; }
+.running-active .fc-run { background: #ef4444; }
+
+.running-hud {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1200;
+  background: rgba(0,0,0,0.85); color: white;
+  padding: calc(env(safe-area-inset-top, 20px) + 8px) 16px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.rh-status { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.rh-pulse {
+  width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0;
+  animation: rhPulse 1.5s ease-in-out infinite;
+}
+@keyframes rhPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
+}
+.rh-label {
+  font-size: 14px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rh-stop {
+  background: #ef4444; color: white; border: none; border-radius: 16px;
+  padding: 6px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  flex-shrink: 0; margin-left: 10px;
+}
+.rh-stop:active { opacity: 0.7; }
+
+/* Hide irrelevant UI during running mode */
+.running-active .search-bar,
+.running-active .filter-btn,
+.running-active .search-area-btn,
+.running-active .topbar { display: none !important; }
