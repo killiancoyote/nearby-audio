@@ -1,7 +1,7 @@
-import { state } from './state.js?v=18';
-import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=18';
-import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=18';
-import { fetchNearby, fetchFullArticle } from './api.js?v=18';
+import { state } from './state.js?v=19';
+import { CATEGORIES, DEFAULT_CAT, classifyArticle, makePinIcon } from './categories.js?v=19';
+import { escHtml, formatDistance, chunkText, toast, hideToast } from './utils.js?v=19';
+import { fetchNearby, fetchFullArticle } from './api.js?v=19';
 import {
   SPEEDS, startArticle, openArticle, playCurrentSection, speakNextChunk,
   stopPlayback, togglePause, skipSection, jumpToSection, cycleSpeed,
@@ -9,11 +9,11 @@ import {
   showPlayer, hidePlayer, renderArticleText, updateArticleTextHighlight,
   switchPlayerTab, updatePlayerUI, renderSectionsList, snapTo,
   toggleHDVoice,
-} from './player.js?v=18';
-import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=18';
-import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=18';
-import { hideSearchResults } from './search.js?v=18';
-import { startRunningMode, stopRunningMode } from './running.js?v=18';
+} from './player.js?v=19';
+import { buildFilterBar, applyFilters, toggleFilterSheet, closeFilterSheet } from './filters.js?v=19';
+import { initMap, setUserLocation, loadNearbyAt, initWithMyLocation, recenterOnUser, openArticlePopup, highlightPlayingMarker, clearPlayingMarker } from './map.js?v=19';
+import { hideSearchResults } from './search.js?v=19';
+import { startRunningMode, stopRunningMode } from './running.js?v=19';
 
 // --- Expose on window for tests ---
 Object.assign(window, {
@@ -32,7 +32,7 @@ Object.assign(window, {
 
 // speedIdx needs special handling since it's a let (re-exported as live binding)
 // Tests access it via eval, so define as a getter on window
-import { speedIdx, playerExpanded } from './player.js?v=18';
+import { speedIdx, playerExpanded } from './player.js?v=19';
 Object.defineProperty(window, 'speedIdx', { get() { return speedIdx; } });
 Object.defineProperty(window, 'playerExpanded', { get() { return playerExpanded; } });
 

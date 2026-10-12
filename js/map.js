@@ -1,9 +1,9 @@
-import { state } from './state.js?v=18';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=18';
-import { escHtml, formatDistance, toast } from './utils.js?v=18';
-import { fetchNearby } from './api.js?v=18';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=18';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=18';
+import { state } from './state.js?v=19';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=19';
+import { escHtml, formatDistance, toast } from './utils.js?v=19';
+import { fetchNearby } from './api.js?v=19';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=19';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=19';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
@@ -13,10 +13,22 @@ const searchAreaBtn = document.getElementById('searchAreaBtn');
 export function initMap(lat, lon) {
   state.map = L.map('map', { zoomControl: false }).setView([lat, lon], 16);
   // OpenFreeMap vector tiles (free, no API key) rendered via MapLibre
-  L.maplibreGL({
+  const gl = L.maplibreGL({
     style: 'https://tiles.openfreemap.org/styles/liberty',
     attribution: '<a href="https://openfreemap.org">OpenFreeMap</a> \u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(state.map);
+  // Declutter: hide 3D buildings, the style's own POI icons, one-way arrows,
+  // and minor street labels so they don't compete with article pins
+  const glMap = gl.getMaplibreMap();
+  glMap.on('load', () => {
+    glMap.getStyle().layers.forEach(({ id }) => {
+      if (/^(building-3d|poi_|road_one_way_arrow|highway-name-(minor|path))/.test(id)) {
+        glMap.setLayoutProperty(id, 'visibility', 'none');
+      }
+    });
+    // Flat building footprints normally stop at z14 where 3D takes over
+    glMap.setLayerZoomRange('building', 13, 24);
+  });
   setUserLocation(lat, lon);
   // Hide labels when zoomed out to reduce clutter
   state.map.on('zoomend', () => {

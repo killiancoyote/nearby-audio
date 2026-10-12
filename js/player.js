@@ -1,7 +1,7 @@
-import { chunkText, escHtml, toast, hideToast } from './utils.js?v=18';
-import { fetchFullArticle } from './api.js?v=18';
-import { state } from './state.js?v=18';
-import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=18';
+import { chunkText, escHtml, toast, hideToast } from './utils.js?v=19';
+import { fetchFullArticle } from './api.js?v=19';
+import { state } from './state.js?v=19';
+import { highlightPlayingMarker, clearPlayingMarker } from './map.js?v=19';
 
 // DOM refs
 const player = document.getElementById('player');

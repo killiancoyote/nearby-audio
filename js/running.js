@@ -1,8 +1,8 @@
-import { state } from './state.js?v=18';
-import { haversineDistance, scoreArticle, fetchNearby, fetchFullArticle } from './api.js?v=18';
-import { playCurrentSection, speakNextChunk, stopPlayback, updatePlayerUI, showPlayer } from './player.js?v=18';
-import { chunkText, toast } from './utils.js?v=18';
-import { highlightPlayingMarker } from './map.js?v=18';
+import { state } from './state.js?v=19';
+import { haversineDistance, scoreArticle, fetchNearby, fetchFullArticle } from './api.js?v=19';
+import { playCurrentSection, speakNextChunk, stopPlayback, updatePlayerUI, showPlayer } from './player.js?v=19';
+import { chunkText, toast } from './utils.js?v=19';
+import { highlightPlayingMarker } from './map.js?v=19';
 
 const PROXIMITY_M = 150;        // trigger radius in meters
 const EARLY_CUT_M = 200;        // meters past article before early cut
