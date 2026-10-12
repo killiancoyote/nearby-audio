@@ -1,4 +1,4 @@
-import { escHtml } from './utils.js?v=16';
+import { escHtml } from './utils.js?v=18';
 
 // Haversine distance (meters) — used when bbox results don't include dist field
 export function haversineDistance(lat1, lon1, lat2, lon2) {

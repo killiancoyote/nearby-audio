@@ -43,7 +43,7 @@ tests.html          — 102 tests via iframe + window access
 - **Nominatim**: Geocoding for search
 
 ### Key design decisions
-- Light theme with CartoDB Voyager map tiles
+- Light theme with OpenFreeMap "liberty" vector tiles (MapLibre via maplibre-gl-leaflet; CARTO now requires an API key)
 - iOS-native feel: SF Pro font, backdrop-filter blur, safe-area-inset padding
 - 10 article categories with color-coded SVG pin icons, classified from Wikipedia description field
 - Pin size varies by article extract length (26/32/36px)

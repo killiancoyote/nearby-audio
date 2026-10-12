@@ -1,9 +1,9 @@
-import { state } from './state.js?v=16';
-import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=16';
-import { escHtml, formatDistance, toast } from './utils.js?v=16';
-import { fetchNearby } from './api.js?v=16';
-import { startArticle, openArticle, stopPlayback } from './player.js?v=16';
-import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=16';
+import { state } from './state.js?v=18';
+import { classifyArticle, makePinIcon, DEFAULT_CAT } from './categories.js?v=18';
+import { escHtml, formatDistance, toast } from './utils.js?v=18';
+import { fetchNearby } from './api.js?v=18';
+import { startArticle, openArticle, stopPlayback } from './player.js?v=18';
+import { closeFilterSheet, applyFilters, setAllFetchedArticles } from './filters.js?v=18';
 
 const emptyState = document.getElementById('emptyState');
 const sub = document.getElementById('sub');
@@ -12,8 +12,10 @@ const searchAreaBtn = document.getElementById('searchAreaBtn');
 
 export function initMap(lat, lon) {
   state.map = L.map('map', { zoomControl: false }).setView([lat, lon], 16);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    maxZoom: 20, attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> \u00a9 <a href="https://carto.com/">CARTO</a>',
+  // OpenFreeMap vector tiles (free, no API key) rendered via MapLibre
+  L.maplibreGL({
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    attribution: '<a href="https://openfreemap.org">OpenFreeMap</a> \u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   }).addTo(state.map);
   setUserLocation(lat, lon);
   // Hide labels when zoomed out to reduce clutter
